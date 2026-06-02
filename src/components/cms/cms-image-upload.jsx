@@ -2,9 +2,10 @@
 
 import { useRef, useState, useCallback } from "react";
 import Cropper from "react-easy-crop";
-import { UploadIcon, Cross1Icon } from "@radix-ui/react-icons";
+import { UploadIcon, Cross1Icon, ImageIcon } from "@radix-ui/react-icons";
 import { adminCmsApi } from "@/lib/endpoints";
 import { useToast } from "@/context/toast-context";
+import CmsVariantSlots from "./cms-variant-slots";
 
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -70,6 +71,7 @@ export default function CmsImageUpload({
 }) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [showVariants, setShowVariants] = useState(false);
   const inputRef = useRef(null);
   const { showToast } = useToast();
 
@@ -175,6 +177,9 @@ export default function CmsImageUpload({
   }
 
   const hasValue = value?.url;
+  const variantCount = value?.sources
+    ? Object.values(value.sources).filter((s) => s?.url).length
+    : 0;
 
   return (
     <>
@@ -254,6 +259,30 @@ export default function CmsImageUpload({
                 e.target.value = "";
               }}
             />
+          </div>
+        )}
+
+        {/* Responsive variants (optional) — image slots only */}
+        {!isVideo && hasValue && (
+          <div className="mt-3 w-full max-w-md">
+            <button
+              type="button"
+              onClick={() => setShowVariants((s) => !s)}
+              className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 transition-colors hover:text-zinc-900"
+            >
+              <ImageIcon className="h-3.5 w-3.5" />
+              Responsive variants
+              {variantCount > 0 ? ` (${variantCount})` : ""}
+              <span className="text-zinc-400">{showVariants ? "▲" : "▼"}</span>
+            </button>
+            {showVariants && (
+              <div className="mt-2">
+                <CmsVariantSlots
+                  sources={value.sources || {}}
+                  onChange={(sources) => onChange({ ...value, sources })}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>

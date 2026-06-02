@@ -224,7 +224,7 @@ export default function ImageUpload({ images = [], onChange, maxImages = 5 }) {
                 className={`absolute bottom-1 right-1 flex items-center gap-1 rounded-full px-1.5 py-1 text-[10px] font-medium ${
                   countVariants(img.sources) > 0
                     ? "bg-zinc-900 text-white"
-                    : "bg-black/40 text-white opacity-0 group-hover:opacity-100"
+                    : "bg-black/60 text-white"
                 }`}
                 title="Responsive variants"
               >
