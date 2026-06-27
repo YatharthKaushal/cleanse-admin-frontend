@@ -15,6 +15,7 @@ import {
 import { useToast } from "@/context/toast-context";
 import { adminBlogApi } from "@/lib/endpoints";
 import ResponsiveVariants, { BREAKPOINTS } from "@/components/responsive-variants";
+import MediaPicker from "@/components/media/media-picker";
 
 const capBp = (bp) => bp.charAt(0).toUpperCase() + bp.slice(1);
 
@@ -73,6 +74,7 @@ export default function BlogForm({ initialData, onSubmit, isSubmitting }) {
   const [errors, setErrors] = useState({});
   const [image, setImage] = useState(null);
   const [imageSources, setImageSources] = useState({});
+  const [optimize, setOptimize] = useState(true);
   const [authors, setAuthors] = useState([]);
   const [tagInput, setTagInput] = useState("");
 
@@ -152,6 +154,7 @@ export default function BlogForm({ initialData, onSubmit, isSubmitting }) {
     }
 
     appendSources(fd, "image", imageSources);
+    fd.append("optimize", String(optimize));
 
     return fd;
   }
@@ -368,7 +371,12 @@ export default function BlogForm({ initialData, onSubmit, isSubmitting }) {
         <h2 className="text-base font-semibold text-zinc-900">Featured Image</h2>
         <p className="mt-1 text-sm text-zinc-500">JPEG, PNG, or WebP, max 5MB.</p>
         <div className="mt-4">
-          <SingleImageUpload image={image} onChange={setImage} />
+          <SingleImageUpload
+            image={image}
+            onChange={setImage}
+            optimize={optimize}
+            onOptimizeChange={setOptimize}
+          />
         </div>
         <div className="mt-5 border-t border-zinc-100 pt-4">
           <h3 className="text-sm font-medium text-zinc-700">
@@ -502,9 +510,10 @@ export default function BlogForm({ initialData, onSubmit, isSubmitting }) {
   );
 }
 
-function SingleImageUpload({ image, onChange }) {
+function SingleImageUpload({ image, onChange, optimize, onOptimizeChange }) {
   const inputRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   function handleFile(file) {
     if (!file) return;
@@ -520,44 +529,72 @@ function SingleImageUpload({ image, onChange }) {
     handleFile(e.dataTransfer.files?.[0]);
   }
 
-  if (image) {
-    return (
-      <div className="relative inline-block overflow-hidden rounded-lg border border-zinc-200">
-        <img src={image.url} alt="" className="h-48 w-full max-w-md object-cover" />
+  return (
+    <div className="flex flex-col gap-3">
+      {image ? (
+        <div className="relative inline-block overflow-hidden rounded-lg border border-zinc-200">
+          <img src={image.url} alt="" className="h-48 w-full max-w-md object-cover" />
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="absolute right-2 top-2 rounded-full bg-white/90 p-1 text-zinc-600 shadow hover:bg-white hover:text-red-600"
+          >
+            <Cross2Icon className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <div
+          onClick={() => inputRef.current?.click()}
+          onDrop={handleDrop}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          className={`flex h-48 max-w-md cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-colors ${
+            isDragging
+              ? "border-zinc-400 bg-zinc-50"
+              : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+          }`}
+        >
+          <UploadIcon className="h-6 w-6 text-zinc-400" />
+          <span className="text-sm text-zinc-500">Drop or click to upload</span>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => handleFile(e.target.files?.[0])}
+          />
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => onChange(null)}
-          className="absolute right-2 top-2 rounded-full bg-white/90 p-1 text-zinc-600 shadow hover:bg-white hover:text-red-600"
+          onClick={() => setPickerOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
         >
-          <Cross2Icon className="h-4 w-4" />
+          Choose from library
         </button>
+        {onOptimizeChange && (
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-zinc-500">
+            <input
+              type="checkbox"
+              checked={!!optimize}
+              onChange={(e) => onOptimizeChange(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-zinc-300"
+            />
+            Optimize → WebP
+          </label>
+        )}
       </div>
-    );
-  }
 
-  return (
-    <div
-      onClick={() => inputRef.current?.click()}
-      onDrop={handleDrop}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setIsDragging(true);
-      }}
-      onDragLeave={() => setIsDragging(false)}
-      className={`flex h-48 max-w-md cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-colors ${
-        isDragging
-          ? "border-zinc-400 bg-zinc-50"
-          : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
-      }`}
-    >
-      <UploadIcon className="h-6 w-6 text-zinc-400" />
-      <span className="text-sm text-zinc-500">Drop or click to upload</span>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="hidden"
-        onChange={(e) => handleFile(e.target.files?.[0])}
+      <MediaPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        imageOnly
+        onSelect={(m) => onChange({ url: m.url, isNew: false })}
       />
     </div>
   );

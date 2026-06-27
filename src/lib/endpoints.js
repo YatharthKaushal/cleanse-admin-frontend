@@ -315,6 +315,18 @@ export const adminLoyaltyApi = {
   stats: () => api.get("/admin/loyalty/stats").then((r) => r.data.data),
 };
 
+export const adminMediaApi = {
+  list: (params) =>
+    api.get("/admin/media", { params }).then((r) => r.data.data),
+  get: (id) => api.get(`/admin/media/${id}`).then((r) => r.data.data),
+  upload: (formData) =>
+    api
+      .post("/admin/media", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((r) => r.data.data),
+};
+
 export const adminCmsApi = {
   getSection: (key) => api.get(`/admin/cms/${key}`).then((r) => r.data.data),
   updateSection: (key, data) =>

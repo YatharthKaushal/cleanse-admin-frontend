@@ -2,10 +2,11 @@
 
 import { useRef, useState, useCallback } from "react";
 import Cropper from "react-easy-crop";
-import { UploadIcon, Cross1Icon, ImageIcon } from "@radix-ui/react-icons";
+import { UploadIcon, Cross1Icon, ImageIcon, ListBulletIcon } from "@radix-ui/react-icons";
 import { adminCmsApi } from "@/lib/endpoints";
 import { useToast } from "@/context/toast-context";
 import CmsVariantSlots from "./cms-variant-slots";
+import MediaPicker from "@/components/media/media-picker";
 
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -72,6 +73,8 @@ export default function CmsImageUpload({
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [showVariants, setShowVariants] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [optimize, setOptimize] = useState(true);
   const inputRef = useRef(null);
   const { showToast } = useToast();
 
@@ -140,6 +143,7 @@ export default function CmsImageUpload({
         const name = originalFile?.name || fileOrBlob.name || "image.jpg";
         formData.append("image", fileOrBlob, name);
       }
+      if (!isVideo) formData.append("optimize", String(optimize));
       const result = isVideo
         ? await adminCmsApi.uploadVideo(formData)
         : await adminCmsApi.uploadImage(formData);
@@ -262,6 +266,29 @@ export default function CmsImageUpload({
           </div>
         )}
 
+        {/* Library picker + optimize toggle */}
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
+          >
+            <ListBulletIcon className="h-3.5 w-3.5" />
+            Choose from library
+          </button>
+          {!isVideo && (
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs text-zinc-500">
+              <input
+                type="checkbox"
+                checked={optimize}
+                onChange={(e) => setOptimize(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-zinc-300"
+              />
+              Optimize → WebP
+            </label>
+          )}
+        </div>
+
         {/* Responsive variants (optional) — image slots only */}
         {!isVideo && hasValue && (
           <div className="mt-3 w-full max-w-md">
@@ -344,6 +371,13 @@ export default function CmsImageUpload({
           </div>
         </div>
       )}
+
+      <MediaPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        imageOnly={!isVideo}
+        onSelect={(m) => onChange({ url: m.url })}
+      />
     </>
   );
 }

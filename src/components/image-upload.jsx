@@ -8,10 +8,12 @@ import {
   StarIcon,
   StarFilledIcon,
   ImageIcon,
+  ListBulletIcon,
 } from "@radix-ui/react-icons";
 import { useToast } from "@/context/toast-context";
 import ImageCropper from "@/components/image-cropper";
 import ResponsiveVariants, { BREAKPOINTS } from "@/components/responsive-variants";
+import MediaPicker from "@/components/media/media-picker";
 
 const countVariants = (sources) =>
   sources ? BREAKPOINTS.filter(({ key }) => sources[key]?.url).length : 0;
@@ -27,13 +29,38 @@ const revokeVariantBlobs = (sources) => {
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
-export default function ImageUpload({ images = [], onChange, maxImages = 5 }) {
+export default function ImageUpload({
+  images = [],
+  onChange,
+  maxImages = 5,
+  optimize,
+  onOptimizeChange,
+}) {
   const [dragOver, setDragOver] = useState(false);
   const [cropFile, setCropFile] = useState(null);
   const [variantsFor, setVariantsFor] = useState(null); // index of image whose dialog is open
+  const [pickerOpen, setPickerOpen] = useState(false);
   const pendingQueue = useRef([]);
   const inputRef = useRef(null);
   const { showToast } = useToast();
+
+  function addFromLibrary(media) {
+    if (images.length >= maxImages) {
+      showToast(`Maximum ${maxImages} images allowed`, "error");
+      return;
+    }
+    const newImg = {
+      url: media.url,
+      alt: media.originalName || "",
+      isPrimary: false,
+      isNew: false,
+    };
+    const updated = [...images, newImg];
+    if (!updated.some((img) => img.isPrimary)) {
+      updated[0] = { ...updated[0], isPrimary: true };
+    }
+    onChange(updated);
+  }
 
   function validateFiles(files) {
     const valid = [];
@@ -176,6 +203,29 @@ export default function ImageUpload({ images = [], onChange, maxImages = 5 }) {
         </div>
       )}
 
+      {/* Library picker + optimize toggle */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
+        >
+          <ListBulletIcon className="h-3.5 w-3.5" />
+          Choose from library
+        </button>
+        {onOptimizeChange && (
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-zinc-500">
+            <input
+              type="checkbox"
+              checked={!!optimize}
+              onChange={(e) => onOptimizeChange(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-zinc-300"
+            />
+            Optimize new uploads → WebP
+          </label>
+        )}
+      </div>
+
       {/* Preview grid */}
       {images.length > 0 && (
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
@@ -282,6 +332,13 @@ export default function ImageUpload({ images = [], onChange, maxImages = 5 }) {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      <MediaPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        imageOnly
+        onSelect={addFromLibrary}
+      />
     </div>
   );
 }

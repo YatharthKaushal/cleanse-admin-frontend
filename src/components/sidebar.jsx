@@ -21,6 +21,7 @@ import {
   EnvelopeClosedIcon,
   HeartIcon,
   Share1Icon,
+  ImageIcon,
   ChatBubbleIcon as CommentIcon,
 } from "@radix-ui/react-icons";
 
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
   { href: "/customers", label: "Customers", icon: PersonIcon },
   { href: "/blogs", label: "Blogs", icon: FileTextIcon },
   { href: "/testimonials", label: "Testimonials", icon: ChatBubbleIcon },
+  { href: "/media", label: "Media", icon: ImageIcon },
   { href: "/coupons", label: "Coupons", icon: ScissorsIcon },
   { href: "/special-coupons", label: "Special Coupons", icon: StarIcon },
   { href: "/spin-wheel", label: "Spin Wheel", icon: UpdateIcon },

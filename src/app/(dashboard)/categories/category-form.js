@@ -5,6 +5,7 @@ import { Cross1Icon, Cross2Icon, UploadIcon } from "@radix-ui/react-icons";
 import { adminCategoryApi } from "@/lib/endpoints";
 import { useToast } from "@/context/toast-context";
 import ImageCropper from "@/components/image-cropper";
+import MediaPicker from "@/components/media/media-picker";
 
 function toImageState(url) {
   return url ? { url, isNew: false } : null;
@@ -25,6 +26,7 @@ export default function CategoryForm({ category, onClose, onSuccess }) {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [optimize, setOptimize] = useState(true);
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -57,6 +59,7 @@ export default function CategoryForm({ category, onClose, onSuccess }) {
     if (isEdit) fd.append("isActive", String(form.isActive));
     appendBanner(fd, "bannerTop", bannerTop, isEdit && !!category?.bannerTop);
     appendBanner(fd, "bannerBottom", bannerBottom, isEdit && !!category?.bannerBottom);
+    fd.append("optimize", String(optimize));
 
     try {
       if (isEdit) {
@@ -150,6 +153,16 @@ export default function CategoryForm({ category, onClose, onSuccess }) {
             />
           </div>
 
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-500">
+            <input
+              type="checkbox"
+              checked={optimize}
+              onChange={(e) => setOptimize(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-zinc-300"
+            />
+            Optimize banner uploads → WebP (visually lossless)
+          </label>
+
           {/* Sort Order */}
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1">
@@ -209,6 +222,7 @@ function BannerUpload({ value, onChange, aspect, title }) {
   const inputRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [pendingFile, setPendingFile] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   function handleFile(file) {
     if (!file) return;
@@ -264,6 +278,16 @@ function BannerUpload({ value, onChange, aspect, title }) {
         </div>
       )}
 
+      <div className="mt-2">
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
+        >
+          Choose from library
+        </button>
+      </div>
+
       {pendingFile && (
         <ImageCropper
           file={pendingFile}
@@ -276,6 +300,13 @@ function BannerUpload({ value, onChange, aspect, title }) {
           onCancel={() => setPendingFile(null)}
         />
       )}
+
+      <MediaPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        imageOnly
+        onSelect={(m) => onChange({ url: m.url, isNew: false })}
+      />
     </>
   );
 }

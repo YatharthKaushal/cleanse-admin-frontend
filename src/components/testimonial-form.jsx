@@ -7,6 +7,7 @@ import * as Switch from "@radix-ui/react-switch";
 import { ChevronDownIcon, CheckIcon, UploadIcon, Cross2Icon } from "@radix-ui/react-icons";
 import { useToast } from "@/context/toast-context";
 import ResponsiveVariants, { BREAKPOINTS } from "@/components/responsive-variants";
+import MediaPicker from "@/components/media/media-picker";
 
 const capBp = (bp) => bp.charAt(0).toUpperCase() + bp.slice(1);
 
@@ -62,6 +63,7 @@ export default function TestimonialForm({ initialData, onSubmit, isSubmitting })
   const [afterImage, setAfterImage] = useState(null);
   const [beforeImageSources, setBeforeImageSources] = useState({});
   const [afterImageSources, setAfterImageSources] = useState({});
+  const [optimize, setOptimize] = useState(true);
 
   // Populate form in edit mode
   useEffect(() => {
@@ -144,6 +146,7 @@ export default function TestimonialForm({ initialData, onSubmit, isSubmitting })
 
     appendSources(fd, "beforeImage", beforeImageSources);
     appendSources(fd, "afterImage", afterImageSources);
+    fd.append("optimize", String(optimize));
 
     return fd;
   }
@@ -339,6 +342,15 @@ export default function TestimonialForm({ initialData, onSubmit, isSubmitting })
         <p className="mt-1 text-sm text-zinc-500">
           Upload before and after photos. JPEG, PNG, or WebP, max 5MB each.
         </p>
+        <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-zinc-500">
+          <input
+            type="checkbox"
+            checked={optimize}
+            onChange={(e) => setOptimize(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-zinc-300"
+          />
+          Optimize uploads → WebP (visually lossless)
+        </label>
         <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div className="flex flex-col gap-3">
             <SingleImageUpload
@@ -404,6 +416,7 @@ export default function TestimonialForm({ initialData, onSubmit, isSubmitting })
 function SingleImageUpload({ label, image, onChange }) {
   const inputRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   function handleFile(file) {
     if (!file) return;
@@ -425,16 +438,12 @@ function SingleImageUpload({ label, image, onChange }) {
     setIsDragging(true);
   }
 
-  if (image) {
-    return (
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-zinc-700">{label}</label>
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-zinc-700">{label}</label>
+      {image ? (
         <div className="relative overflow-hidden rounded-lg border border-zinc-200">
-          <img
-            src={image.url}
-            alt={label}
-            className="h-48 w-full object-cover"
-          />
+          <img src={image.url} alt={label} className="h-48 w-full object-cover" />
           <button
             type="button"
             onClick={() => onChange(null)}
@@ -443,34 +452,44 @@ function SingleImageUpload({ label, image, onChange }) {
             <Cross2Icon className="h-4 w-4" />
           </button>
         </div>
-      </div>
-    );
-  }
+      ) : (
+        <div
+          onClick={() => inputRef.current?.click()}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={() => setIsDragging(false)}
+          className={`flex h-48 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-colors ${
+            isDragging
+              ? "border-zinc-400 bg-zinc-50"
+              : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+          }`}
+        >
+          <UploadIcon className="h-6 w-6 text-zinc-400" />
+          <span className="text-sm text-zinc-500">Drop or click to upload</span>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => handleFile(e.target.files?.[0])}
+          />
+        </div>
+      )}
 
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-zinc-700">{label}</label>
-      <div
-        onClick={() => inputRef.current?.click()}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={() => setIsDragging(false)}
-        className={`flex h-48 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-colors ${
-          isDragging
-            ? "border-zinc-400 bg-zinc-50"
-            : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
-        }`}
+      <button
+        type="button"
+        onClick={() => setPickerOpen(true)}
+        className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
       >
-        <UploadIcon className="h-6 w-6 text-zinc-400" />
-        <span className="text-sm text-zinc-500">Drop or click to upload</span>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={(e) => handleFile(e.target.files?.[0])}
-        />
-      </div>
+        Choose from library
+      </button>
+
+      <MediaPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        imageOnly
+        onSelect={(m) => onChange({ url: m.url, isNew: false })}
+      />
     </div>
   );
 }

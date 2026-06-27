@@ -133,6 +133,7 @@ export default function ProductForm({ initialData, onSubmit, isSubmitting }) {
   const [seo, setSeo] = useState(() => initSeo(initialData));
   const [sizes, setSizes] = useState(() => initSizes(initialData));
   const [images, setImages] = useState(() => initImages(initialData));
+  const [optimize, setOptimize] = useState(true);
   const [categories, setCategories] = useState([]);
   const [tabHighlights, setTabHighlights] = useState(() => initialData?.tabHighlights || {});
   const [errors, setErrors] = useState({});
@@ -302,6 +303,7 @@ export default function ProductForm({ initialData, onSubmit, isSubmitting }) {
       return entry;
     });
     fd.append("images", JSON.stringify(meta));
+    fd.append("optimize", String(optimize));
 
     return fd;
   }
@@ -654,7 +656,12 @@ export default function ProductForm({ initialData, onSubmit, isSubmitting }) {
               Upload up to 5 images. Each image will be cropped to 3:4 portrait. Click the star to set as primary.
             </p>
             <div className="mt-4">
-              <ImageUpload images={images} onChange={setImages} />
+              <ImageUpload
+                images={images}
+                onChange={setImages}
+                optimize={optimize}
+                onOptimizeChange={setOptimize}
+              />
             </div>
           </div>
 
