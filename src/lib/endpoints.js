@@ -154,6 +154,10 @@ export const adminShiprocketApi = {
   getConfig: () => api.get("/admin/shiprocket/config").then((r) => r.data.data),
   setConfig: (config) =>
     api.patch("/admin/shiprocket/config", config).then((r) => r.data.data),
+  orderWebhookLogs: (id) =>
+    api.get(`/admin/orders/${id}/shiprocket/logs`).then((r) => r.data.data),
+  webhookLogs: (params) =>
+    api.get("/admin/shiprocket/webhook-logs", { params }).then((r) => r.data.data),
 };
 
 export const adminBundleApi = {

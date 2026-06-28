@@ -481,6 +481,7 @@ function OrderDetail({ order, onUpdated }) {
             <ItemsSection order={order} />
             <PricingSection order={order} />
             <CustomerDeliverySection order={order} />
+            <AdvancedOps order={order} onUpdated={onUpdated} />
           </Tabs.Content>
 
           <Tabs.Content value="activity" className="flex-1 p-6">
@@ -532,108 +533,175 @@ function FulfillmentBlock({ order, onUpdated }) {
     }
   };
 
-  const stepIdx = STEP_INDEX[status] ?? -1;
-  const isBranch = stepIdx === -1; // cancelled / rto / return / refund
+  const accent = OWNERS[help.owner]?.dot || "bg-zinc-300";
+  const yourTurn = help.owner === "you" || isReturnReq;
 
   return (
     <div className="space-y-4">
-      {/* Stepper */}
-      <div className="rounded-lg border border-zinc-200 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Fulfilment</h3>
-          <div className="flex items-center gap-2">
-            <StatusBadge status={status} />
-            <PaymentBadge status={order.payment?.status} />
-          </div>
-        </div>
-        <div className="flex items-center gap-1 overflow-x-auto pb-1">
-          {STEPS.map((step, i) => {
-            const done = !isBranch && i < stepIdx;
-            const current = !isBranch && i === stepIdx;
-            return (
-              <div key={step.code} className="flex items-center shrink-0">
-                <div className="flex flex-col items-center w-[68px] text-center">
-                  <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${
-                    done ? "bg-zinc-900 text-white" : current ? "ring-2 ring-zinc-900 text-zinc-900" : "bg-zinc-100 text-zinc-400"
-                  }`}>
-                    {done ? <CheckIcon className="h-3 w-3" /> : i + 1}
+      {/* Hero: current stage + the one next action */}
+      <div className="overflow-hidden rounded-xl border border-zinc-200">
+        <div className="flex">
+          <span className={`w-1 shrink-0 ${accent}`} />
+          <div className="flex-1 p-4 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+                    {yourTurn ? "Your turn" : "Current stage"}
                   </span>
-                  <span className={`mt-1 text-[10px] leading-tight ${current ? "font-semibold text-zinc-900" : "text-zinc-400"}`}>{plain(step.code)}</span>
-                  <span className={`mt-0.5 h-1 w-1 rounded-full ${OWNERS[step.owner]?.dot || "bg-zinc-300"}`} title={OWNERS[step.owner]?.label} />
+                  <OwnerBadge owner={help.owner} />
                 </div>
-                {i < STEPS.length - 1 && <span className={`h-px w-3 ${done ? "bg-zinc-900" : "bg-zinc-200"}`} />}
+                <p className="mt-1 text-lg font-semibold leading-tight text-zinc-900">{plain(status)}</p>
+                <p className="text-[11px] text-zinc-400">status: {status}</p>
               </div>
-            );
-          })}
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <StatusBadge status={status} />
+                <PaymentBadge status={order.payment?.status} />
+              </div>
+            </div>
+
+            <p className="text-sm text-zinc-500">{help.text}</p>
+
+            {/* Primary action / return / cancel */}
+            {(cta || isReturnReq || canCancel) && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {cta && (
+                  cta.confirm ? (
+                    <ConfirmAction
+                      title={cta.confirm.title}
+                      description={cta.confirm.description}
+                      confirmLabel={cta.label}
+                      onConfirm={() => setStatus(cta.to)}
+                      trigger={
+                        <button className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50" disabled={!!busy}>
+                          <IconTruck className="h-4 w-4" /> {cta.label}
+                        </button>
+                      }
+                    />
+                  ) : (
+                    <button onClick={() => setStatus(cta.to)} disabled={!!busy} className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50">
+                      {busy === cta.to ? <ReloadIcon className="h-3.5 w-3.5 animate-spin" /> : <CheckCircledIcon className="h-3.5 w-3.5" />} {cta.label}
+                    </button>
+                  )
+                )}
+                {isReturnReq && (
+                  <>
+                    <button onClick={() => approveReturn("approve")} disabled={!!busy} className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50">
+                      <CheckIcon className="h-3.5 w-3.5" /> Approve return
+                    </button>
+                    <button onClick={() => approveReturn("reject")} disabled={!!busy} className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-50">
+                      <Cross1Icon className="h-3.5 w-3.5" /> Reject
+                    </button>
+                  </>
+                )}
+                {canCancel && (
+                  <ConfirmAction
+                    title="Cancel this order?"
+                    description="The order will be cancelled and any booked courier shipment cancelled. Paid orders are refunded automatically."
+                    confirmLabel="Cancel order"
+                    danger
+                    onConfirm={() => setStatus("cancelled")}
+                    trigger={<button className="ml-auto text-xs text-red-500 hover:text-red-600">Cancel order</button>}
+                  />
+                )}
+              </div>
+            )}
+          </div>
         </div>
-        {isBranch && (
-          <p className="mt-2 text-xs text-orange-700">This order is on the <strong>{plain(status)}</strong> path (outside the normal delivery flow).</p>
-        )}
       </div>
 
-      {/* Current stage + primary action */}
-      <div className="rounded-lg border border-zinc-200 p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-zinc-900">{plain(status)}</p>
-            <p className="text-[11px] text-zinc-400">status: {status}</p>
-          </div>
-          <OwnerBadge owner={help.owner} />
-        </div>
-        <p className="text-xs text-zinc-500">{help.text}</p>
-
-        {/* Primary CTA (admin's routine next step) */}
-        {cta && (
-          cta.confirm ? (
-            <ConfirmAction
-              title={cta.confirm.title}
-              description={cta.confirm.description}
-              confirmLabel={cta.label}
-              onConfirm={() => setStatus(cta.to)}
-              trigger={
-                <button className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50" disabled={!!busy}>
-                  <IconTruck className="h-4 w-4" /> {cta.label}
-                </button>
-              }
-            />
-          ) : (
-            <button onClick={() => setStatus(cta.to)} disabled={!!busy} className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50">
-              {busy === cta.to ? <ReloadIcon className="h-3.5 w-3.5 animate-spin" /> : <CheckCircledIcon className="h-3.5 w-3.5" />} {cta.label}
-            </button>
-          )
-        )}
-
-        {/* Return approve / reject */}
-        {isReturnReq && (
-          <div className="flex gap-2">
-            <button onClick={() => approveReturn("approve")} disabled={!!busy} className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50">
-              <CheckIcon className="h-3.5 w-3.5" /> Approve return
-            </button>
-            <button onClick={() => approveReturn("reject")} disabled={!!busy} className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-50">
-              <Cross1Icon className="h-3.5 w-3.5" /> Reject
-            </button>
-          </div>
-        )}
-
-        {/* Cancel (quiet secondary) */}
-        {canCancel && (
-          <ConfirmAction
-            title="Cancel this order?"
-            description="The order will be cancelled and any booked courier shipment cancelled. Paid orders are refunded automatically."
-            confirmLabel="Cancel order"
-            danger
-            onConfirm={() => setStatus("cancelled")}
-            trigger={<button className="text-xs text-red-500 hover:text-red-600">Cancel order</button>}
-          />
-        )}
-      </div>
+      {/* Vertical journey timeline */}
+      <VerticalTimeline order={order} />
 
       {/* Shipment facts */}
       {(s.shiprocketOrderId || s.awbNumber) && <ShipmentFacts s={s} />}
-
-      {/* Advanced / manual overrides */}
-      <AdvancedOps order={order} onUpdated={onUpdated} />
     </div>
+  );
+}
+
+// Branch (off the forward chain) status → owner.
+const BRANCH_OWNER = {
+  cancelled: "you",
+  rto_in_transit: "courier",
+  rto_delivered: "courier",
+  return_requested: "customer",
+  return_approved: "you",
+  returned: "courier",
+  refund_initiated: "automatic",
+  refunded: "automatic",
+};
+
+// Build code→timestamp map from order timestamps + the attributed activity log.
+function buildStamps(order) {
+  const stamps = {};
+  if (order.createdAt) stamps.pending = order.createdAt;
+  if (order.confirmedAt) stamps.confirmed = order.confirmedAt;
+  if (order.shippedAt) stamps.shipped = order.shippedAt;
+  if (order.deliveredAt) stamps.delivered = order.deliveredAt;
+  if (order.cancelledAt) stamps.cancelled = order.cancelledAt;
+  for (const n of order.adminNotes || []) {
+    const m = (n.event || "").match(/^(?:status|tracking):(.+)$/);
+    if (m && !stamps[m[1]]) stamps[m[1]] = n.addedAt;
+  }
+  return stamps;
+}
+
+function VerticalTimeline({ order }) {
+  const status = order.status;
+  const stamps = buildStamps(order);
+  const fwdIdx = STEP_INDEX[status];
+  const isBranch = fwdIdx === undefined;
+  const reached = !isBranch
+    ? fwdIdx
+    : stamps.delivered ? 7 : stamps.shipped ? 4 : stamps.confirmed ? 1 : 0;
+
+  const rows = STEPS.map((step, i) => ({
+    code: step.code,
+    owner: step.owner,
+    at: stamps[step.code],
+    state: i < reached ? "done" : i === reached && !isBranch ? "current" : i <= reached ? "done" : "upcoming",
+  }));
+  if (isBranch) {
+    rows.push({ code: status, owner: BRANCH_OWNER[status] || "automatic", at: stamps[status], state: "current", branch: true });
+  }
+
+  return (
+    <div className="rounded-xl border border-zinc-200 p-4">
+      <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-400">Journey</h3>
+      <ol className="relative">
+        {rows.map((r, i) => (
+          <TimelineRow key={`${r.code}-${i}`} row={r} last={i === rows.length - 1} />
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function TimelineRow({ row, last }) {
+  const done = row.state === "done";
+  const current = row.state === "current";
+  return (
+    <li className="relative flex gap-3 pb-4 last:pb-0">
+      {!last && <span className="absolute left-[6px] top-3.5 h-full w-px bg-zinc-200" />}
+      <span className={`relative z-10 mt-0.5 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full ${
+        row.branch ? "bg-orange-500"
+          : done ? "bg-zinc-900"
+          : current ? "bg-white ring-2 ring-zinc-900"
+          : "bg-white ring-2 ring-zinc-200"
+      }`}>
+        {done && !row.branch && <CheckIcon className="h-2.5 w-2.5 text-white" />}
+      </span>
+      <div className="-mt-0.5 min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <span className={`text-sm ${current ? "font-semibold text-zinc-900" : done ? "text-zinc-700" : "text-zinc-400"}`}>{plain(row.code)}</span>
+          {row.at && <span className="shrink-0 text-[11px] text-zinc-400">{formatDateTime(row.at)}</span>}
+        </div>
+        <div className="mt-0.5 flex items-center gap-2">
+          <span className="text-[10px] text-zinc-400">{row.code}</span>
+          <OwnerBadge owner={row.owner} size="xs" />
+        </div>
+      </div>
+    </li>
   );
 }
 
@@ -1010,6 +1078,93 @@ function ActivityFeed({ order, onUpdated }) {
           })
         )}
       </div>
+
+      <WebhookLogViewer orderId={order._id} />
+    </div>
+  );
+}
+
+const WH_RESULT = {
+  processed: "bg-green-50 text-green-700",
+  duplicate: "bg-zinc-100 text-zinc-500",
+  unknown_order: "bg-amber-50 text-amber-700",
+  unauthorized: "bg-red-50 text-red-700",
+  bad_request: "bg-red-50 text-red-700",
+  error: "bg-red-50 text-red-700",
+};
+
+// Raw Shiprocket webhook audit log — technical, collapsed by default.
+function WebhookLogViewer({ orderId }) {
+  const { showToast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [logs, setLogs] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState({});
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await adminShiprocketApi.orderWebhookLogs(orderId);
+      setLogs(data.logs || []);
+    } catch {
+      showToast("Failed to load webhook logs", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && logs === null) load();
+  };
+
+  return (
+    <div className="rounded-lg border border-zinc-200">
+      <button onClick={toggle} className="flex w-full items-center justify-between px-4 py-3 text-left">
+        <div>
+          <p className="text-sm font-medium text-zinc-700">Webhook log (technical)</p>
+          <p className="text-[11px] text-zinc-400">Raw courier updates received — for debugging.</p>
+        </div>
+        <ChevronDownIcon className={`h-4 w-4 text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="border-t border-zinc-100 p-3 space-y-2">
+          <div className="flex justify-end">
+            <button onClick={load} className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800">
+              <ReloadIcon className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} /> Refresh
+            </button>
+          </div>
+          {loading && logs === null ? (
+            <p className="text-xs text-zinc-400 py-4 text-center">Loading…</p>
+          ) : !logs || logs.length === 0 ? (
+            <p className="text-xs text-zinc-400 py-4 text-center">No webhook calls recorded for this order yet.</p>
+          ) : (
+            logs.map((l, i) => (
+              <div key={l._id || i} className="rounded border border-zinc-100">
+                <button onClick={() => setExpanded((e) => ({ ...e, [i]: !e[i] }))} className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left">
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${WH_RESULT[l.result] || "bg-zinc-100 text-zinc-500"}`}>{l.result}</span>
+                    <span className="truncate text-xs text-zinc-600">{l.currentStatus || l.shipmentStatus || "—"} (id {l.currentStatusId ?? "—"})</span>
+                  </span>
+                  <span className="shrink-0 text-[11px] text-zinc-400">{formatDateTime(l.receivedAt)}</span>
+                </button>
+                {expanded[i] && (
+                  <div className="border-t border-zinc-100 p-2">
+                    <div className="mb-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-zinc-500">
+                      <span>HTTP {l.responseCode}</span>
+                      <span>auth: {l.authorized ? "ok" : "fail"}</span>
+                      {l.appliedStatus && <span>→ {l.appliedStatus}</span>}
+                      {l.error && <span className="text-red-600">err: {l.error}</span>}
+                    </div>
+                    <pre className="max-h-56 overflow-auto rounded bg-zinc-50 p-2 text-[10px] leading-relaxed text-zinc-700">{JSON.stringify(l.payload, null, 2)}</pre>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
