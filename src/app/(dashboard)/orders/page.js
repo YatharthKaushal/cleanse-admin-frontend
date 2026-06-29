@@ -35,7 +35,8 @@ const ORDER_STATUSES = [
   { value: "confirmed", label: "Confirmed" },
   { value: "processing", label: "Processing" },
   { value: "packed", label: "Packed" },
-  { value: "shipped", label: "Handed to courier" },
+  { value: "pickup_scheduled", label: "Awaiting pickup" },
+  { value: "shipped", label: "Picked up" },
   { value: "in_transit", label: "On the way" },
   { value: "out_for_delivery", label: "Out for delivery" },
   { value: "delivered", label: "Delivered" },
@@ -63,7 +64,8 @@ const PLAIN = {
   confirmed: "Confirmed",
   processing: "Processing",
   packed: "Packed",
-  shipped: "Handed to courier",
+  pickup_scheduled: "Awaiting pickup",
+  shipped: "Picked up",
   in_transit: "On the way",
   out_for_delivery: "Out for delivery",
   delivered: "Delivered",
@@ -83,7 +85,8 @@ const VALID_TRANSITIONS = {
   pending: ["confirmed", "cancelled"],
   confirmed: ["processing", "cancelled"],
   processing: ["packed", "cancelled"],
-  packed: ["shipped", "cancelled"],
+  packed: ["pickup_scheduled", "cancelled"],
+  pickup_scheduled: ["shipped", "in_transit", "rto_in_transit", "cancelled"],
   shipped: ["in_transit", "rto_in_transit"],
   in_transit: ["out_for_delivery", "rto_in_transit"],
   out_for_delivery: ["delivered", "rto_in_transit"],
@@ -104,12 +107,12 @@ const ADMIN_CTA = {
   confirmed: { to: "processing", label: "Start processing" },
   processing: { to: "packed", label: "Mark as packed" },
   packed: {
-    to: "shipped",
-    label: "Hand to courier",
+    to: "pickup_scheduled",
+    label: "Book courier pickup",
     confirm: {
-      title: "Hand to courier?",
+      title: "Book courier pickup?",
       description:
-        "This books a courier pickup and assigns a tracking number. It uses your Shiprocket wallet balance. The courier will be asked to collect the parcel.",
+        "This assigns a tracking number and requests a courier pickup from your warehouse (uses your Shiprocket wallet). The status updates automatically once it's collected.",
     },
   },
 };
@@ -119,8 +122,9 @@ const STAGE_HELP = {
   pending: { owner: "you", text: "Your turn: confirm the order to start fulfilment." },
   confirmed: { owner: "you", text: "Your turn: start processing the order." },
   processing: { owner: "you", text: "Your turn: pack the order." },
-  packed: { owner: "you", text: "Your turn: hand the parcel to the courier." },
-  shipped: { owner: "courier", text: "Automatic — waiting for the courier to pick up. Status updates on its own." },
+  packed: { owner: "you", text: "Your turn: pack it, then book the courier pickup." },
+  pickup_scheduled: { owner: "courier", text: "Pickup booked. The courier collects it on its scheduled run (cut-off based). Updates automatically." },
+  shipped: { owner: "courier", text: "Picked up by the courier. On its way." },
   in_transit: { owner: "courier", text: "Automatic — parcel is on its way. Status updates on its own." },
   out_for_delivery: { owner: "courier", text: "Automatic — out for delivery today." },
   delivered: { owner: "courier", text: "Delivered. Nothing more to do." },
@@ -140,7 +144,8 @@ const STEPS = [
   { code: "confirmed", owner: "you" },
   { code: "processing", owner: "you" },
   { code: "packed", owner: "you" },
-  { code: "shipped", owner: "you" },
+  { code: "pickup_scheduled", owner: "you" },
+  { code: "shipped", owner: "courier" },
   { code: "in_transit", owner: "courier" },
   { code: "out_for_delivery", owner: "courier" },
   { code: "delivered", owner: "courier" },
@@ -221,6 +226,7 @@ function statusColor(status) {
     case "return_requested":
     case "return_approved":
       return "bg-amber-50 text-amber-700";
+    case "pickup_scheduled":
     case "shipped":
     case "in_transit":
     case "out_for_delivery":
@@ -258,7 +264,7 @@ function StatusBadge({ status }) {
       <span className={`h-1.5 w-1.5 rounded-full ${
         status === "delivered" ? "bg-green-500"
           : status === "cancelled" ? "bg-red-500"
-          : ["shipped", "in_transit", "out_for_delivery"].includes(status) ? "bg-blue-500"
+          : ["pickup_scheduled", "shipped", "in_transit", "out_for_delivery"].includes(status) ? "bg-blue-500"
           : ["rto_in_transit", "rto_delivered"].includes(status) ? "bg-orange-500"
           : ["return_requested", "return_approved"].includes(status) ? "bg-amber-500"
           : "bg-zinc-400"
@@ -478,8 +484,7 @@ function OrderDetail({ order, onUpdated }) {
 
           <Tabs.Content value="details" className="flex-1 p-6 space-y-6">
             <FulfillmentBlock order={order} onUpdated={onUpdated} />
-            <ItemsSection order={order} />
-            <PricingSection order={order} />
+            <ItemsPaymentSection order={order} />
             <CustomerDeliverySection order={order} />
             <AdvancedOps order={order} onUpdated={onUpdated} />
           </Tabs.Content>
@@ -636,6 +641,7 @@ function buildStamps(order) {
   const stamps = {};
   if (order.createdAt) stamps.pending = order.createdAt;
   if (order.confirmedAt) stamps.confirmed = order.confirmedAt;
+  if (order.pickupBookedAt) stamps.pickup_scheduled = order.pickupBookedAt;
   if (order.shippedAt) stamps.shipped = order.shippedAt;
   if (order.deliveredAt) stamps.delivered = order.deliveredAt;
   if (order.cancelledAt) stamps.cancelled = order.cancelledAt;
@@ -705,6 +711,26 @@ function TimelineRow({ row, last }) {
   );
 }
 
+// Shiprocket brand mark + badge (brand purple #854DFF).
+function IconRocket({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+      <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+    </svg>
+  );
+}
+
+function ShiprocketBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-[#854DFF]/10 px-2 py-0.5 text-[10px] font-semibold text-[#854DFF]">
+      <IconRocket className="h-3 w-3" /> Powered by Shiprocket
+    </span>
+  );
+}
+
 function ShipmentFacts({ s }) {
   const [copied, setCopied] = useState(false);
   const copy = (v) => {
@@ -714,8 +740,11 @@ function ShipmentFacts({ s }) {
     setTimeout(() => setCopied(false), 1200);
   };
   return (
-    <div className="rounded-lg border border-zinc-200 p-4 space-y-2">
-      <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Shipment</h3>
+    <div className="rounded-lg border border-[#854DFF]/20 p-4 space-y-2">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Shipment</h3>
+        <ShiprocketBadge />
+      </div>
       <Fact label="Tracking number">
         {s.awbNumber ? (
           <span className="inline-flex items-center gap-1 font-mono">
@@ -732,9 +761,9 @@ function ShipmentFacts({ s }) {
       <Fact label="Est. delivery">{s.estimatedDelivery ? formatDate(s.estimatedDelivery) : "—"}</Fact>
       <Fact label="Last update">{s.lastWebhookAt ? formatDateTime(s.lastWebhookAt) : "—"}</Fact>
       <div className="flex flex-wrap gap-3 pt-1">
-        {s.trackingUrl && <a href={s.trackingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"><ExternalLinkIcon className="h-3 w-3" /> Track parcel</a>}
-        {s.labelUrl && <a href={s.labelUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"><ExternalLinkIcon className="h-3 w-3" /> Shipping label</a>}
-        {s.manifestUrl && <a href={s.manifestUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"><ExternalLinkIcon className="h-3 w-3" /> Handover sheet</a>}
+        {s.trackingUrl && <a href={s.trackingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-[#854DFF] hover:underline"><ExternalLinkIcon className="h-3 w-3" /> Track parcel</a>}
+        {s.labelUrl && <a href={s.labelUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-[#854DFF] hover:underline"><ExternalLinkIcon className="h-3 w-3" /> Shipping label</a>}
+        {s.manifestUrl && <a href={s.manifestUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-[#854DFF] hover:underline"><ExternalLinkIcon className="h-3 w-3" /> Handover sheet</a>}
       </div>
       {s.returnShipment?.awbNumber && (
         <div className="mt-2 rounded border border-zinc-100 bg-zinc-50 p-2">
@@ -892,38 +921,36 @@ function ConfirmAction({ trigger, title, description, confirmLabel = "Confirm", 
 /* Items / Pricing / Customer sections                                */
 /* ------------------------------------------------------------------ */
 
-function ItemsSection({ order }) {
-  return (
-    <div className="space-y-2">
-      <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Items to pack ({order.items?.length || 0})</h3>
-      <div className="rounded-lg border border-zinc-200 divide-y divide-zinc-100">
-        {(order.items || []).map((item, idx) => {
-          const product = item.product;
-          const primaryImg = product?.images?.find((i) => i.isPrimary)?.url || product?.images?.[0]?.url;
-          const img = item.image || primaryImg || "/images/placeholder.jpg";
-          return (
-            <div key={idx} className="flex items-center gap-3 p-3">
-              <img src={img} alt={item.name} className="h-12 w-12 rounded-lg object-cover bg-zinc-100 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-zinc-900 truncate">{item.name}</p>
-                <p className="text-xs text-zinc-400">Qty: {item.quantity}{item.selectedSize ? ` / Size: ${item.selectedSize}` : ""}</p>
-              </div>
-              <span className="text-sm font-medium text-zinc-900 shrink-0">&#8377;{(item.price * item.quantity).toLocaleString("en-IN")}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function PricingSection({ order }) {
+// Items + Payment combined in a single card (price breakdown stays an accordion).
+function ItemsPaymentSection({ order }) {
   const [open, setOpen] = useState(false);
   const p = order.pricing || {};
   return (
-    <div className="space-y-2">
-      <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Payment</h3>
-      <div className="rounded-lg border border-zinc-200">
+    <div className="rounded-lg border border-zinc-200 divide-y divide-zinc-100">
+      {/* Items */}
+      <div className="p-3">
+        <h3 className="mb-2 text-xs font-medium text-zinc-400 uppercase tracking-wider">Items to pack ({order.items?.length || 0})</h3>
+        <div className="space-y-2">
+          {(order.items || []).map((item, idx) => {
+            const product = item.product;
+            const primaryImg = product?.images?.find((i) => i.isPrimary)?.url || product?.images?.[0]?.url;
+            const img = item.image || primaryImg || "/images/placeholder.jpg";
+            return (
+              <div key={idx} className="flex items-center gap-3">
+                <img src={img} alt={item.name} className="h-12 w-12 rounded-lg object-cover bg-zinc-100 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-zinc-900 truncate">{item.name}</p>
+                  <p className="text-xs text-zinc-400">Qty: {item.quantity}{item.selectedSize ? ` / Size: ${item.selectedSize}` : ""}</p>
+                </div>
+                <span className="text-sm font-medium text-zinc-900 shrink-0">&#8377;{(item.price * item.quantity).toLocaleString("en-IN")}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Payment (accordion) */}
+      <div>
         <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between px-4 py-3">
           <span className="text-sm font-semibold text-zinc-900">Total</span>
           <span className="flex items-center gap-2">

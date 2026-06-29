@@ -10,6 +10,26 @@ export default function CmsFooterEditor({ data, onChange }) {
 
   const navLinks = data.navigationLinks || [];
   const socialLinks = data.socialLinks || {};
+  const contact = data.contact || {};
+  const addressLines = contact.addressLines || [];
+
+  const updateContact = (field, value) =>
+    update("contact", { ...contact, [field]: value });
+
+  const updateAddressLine = (index, value) => {
+    const lines = [...addressLines];
+    lines[index] = value;
+    updateContact("addressLines", lines);
+  };
+
+  const addAddressLine = () =>
+    updateContact("addressLines", [...addressLines, ""]);
+
+  const removeAddressLine = (index) =>
+    updateContact(
+      "addressLines",
+      addressLines.filter((_, i) => i !== index)
+    );
 
   const updateNavLink = (index, field, value) => {
     const links = [...navLinks];
@@ -98,6 +118,69 @@ export default function CmsFooterEditor({ data, onChange }) {
               />
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Contact / Address */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-medium text-zinc-500">
+            Address Lines
+          </label>
+          <button
+            type="button"
+            onClick={addAddressLine}
+            className="flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
+          >
+            <PlusIcon className="h-3 w-3" />
+            Add Line
+          </button>
+        </div>
+        <div className="space-y-2">
+          {addressLines.map((line, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={line || ""}
+                onChange={(e) => updateAddressLine(i, e.target.value)}
+                placeholder="e.g. 42 Wellness Avenue, Bandra West, Mumbai 400050"
+                className={inputClass}
+              />
+              <button
+                type="button"
+                onClick={() => removeAddressLine(i)}
+                className="rounded p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500"
+              >
+                <TrashIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              value={contact.email || ""}
+              onChange={(e) => updateContact("email", e.target.value)}
+              placeholder="care@cleanseayurveda.com"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1">
+              Phone
+            </label>
+            <input
+              type="text"
+              value={contact.phone || ""}
+              onChange={(e) => updateContact("phone", e.target.value)}
+              placeholder="+91 80000 00000"
+              className={inputClass}
+            />
+          </div>
         </div>
       </div>
 
