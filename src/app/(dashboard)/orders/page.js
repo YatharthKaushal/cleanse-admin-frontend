@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   ArchiveIcon,
   ChevronRightIcon,
@@ -12,15 +12,17 @@ import {
   CopyIcon,
   CheckIcon,
   ChevronDownIcon,
+  CrossCircledIcon,
 } from "@radix-ui/react-icons";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import * as Tabs from "@radix-ui/react-tabs";
-import { adminOrderApi, adminShiprocketApi } from "@/lib/endpoints";
+import { adminOrderApi, adminShiprocketApi, adminWhatsAppApi } from "@/lib/endpoints";
 import { useToast } from "@/context/toast-context";
 import { useDebounce } from "@/lib/use-debounce";
 import DataTable from "@/components/data-table";
+import ConfirmDialog from "@/components/confirm-dialog";
 import SearchInput from "@/components/search-input";
 import SelectFilter from "@/components/select-filter";
 import Pagination from "@/components/pagination";
@@ -291,7 +293,139 @@ function formatDateTime(d) {
   return new Date(d).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+/* ------------------------------------------------------------------ */
+/* COD WhatsApp-confirmation hold helpers                              */
+/* ------------------------------------------------------------------ */
+
+const COD_HOLD_TTL_MS = 48 * 60 * 60 * 1000;
+
+const isAwaitingCod = (o) => o?.codConfirmation?.status === "awaiting";
+
+function codExpiry(o) {
+  const sent = o?.codConfirmation?.sentAt || o?.createdAt;
+  const exp = new Date(sent).getTime() + COD_HOLD_TTL_MS;
+  return { exp, msLeft: exp - Date.now() };
+}
+
+function formatLeft(ms) {
+  if (ms <= 0) return "expired";
+  const h = Math.floor(ms / 3.6e6);
+  const m = Math.floor((ms % 3.6e6) / 6e4);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+// Live-ticking "time left" until a COD hold auto-expires.
+function Countdown({ order, className }) {
+  const [, force] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => force((n) => n + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
+  const { msLeft } = codExpiry(order);
+  return <span className={className}>{formatLeft(msLeft)}</span>;
+}
+
+// Small amber pill shown wherever an awaiting-confirmation COD order appears.
+function AwaitingPill() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+      <ChatBubbleIcon className="h-3 w-3" /> Awaiting WhatsApp
+    </span>
+  );
+}
+
+/**
+ * Shared COD-hold controls for a single order: manual confirm/cancel + a gate
+ * that intercepts any fulfilment action while the customer hasn't confirmed.
+ * `gatedRun(fn)` runs fn immediately if not awaiting; otherwise opens the modal,
+ * and on Proceed it confirms the order (admin override) then runs fn.
+ */
+function useCodGate(order, onUpdated, showToast) {
+  const awaiting = isAwaitingCod(order);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const actRef = useRef(null);
+
+  const gatedRun = (fn) => {
+    if (!awaiting) return fn ? fn() : undefined;
+    actRef.current = fn || null;
+    setOpen(true);
+  };
+
+  const proceed = async () => {
+    setBusy(true);
+    try {
+      const data = await adminWhatsAppApi.confirmCod(order._id);
+      onUpdated(data.order || data);
+      if (actRef.current) await actRef.current();
+      showToast("Order confirmed", "success");
+      setOpen(false);
+    } catch (err) {
+      showToast(err?.response?.data?.message || "Failed to confirm order", "error");
+    } finally {
+      setBusy(false);
+      actRef.current = null;
+    }
+  };
+
+  const confirmNow = async () => {
+    try {
+      const data = await adminWhatsAppApi.confirmCod(order._id);
+      onUpdated(data.order || data);
+      showToast("Order confirmed", "success");
+    } catch (err) {
+      showToast(err?.response?.data?.message || "Failed to confirm order", "error");
+    }
+  };
+
+  const cancelNow = async () => {
+    try {
+      const data = await adminWhatsAppApi.cancelCod(order._id, "Cancelled by admin");
+      onUpdated(data.order || data);
+      showToast("Order cancelled", "success");
+    } catch (err) {
+      showToast(err?.response?.data?.message || "Failed to cancel order", "error");
+    }
+  };
+
+  return { awaiting, open, setOpen, busy, gatedRun, proceed, confirmNow, cancelNow };
+}
+
+function CodGateModal({ open, onOpenChange, order, onProceed, busy }) {
+  const { msLeft } = codExpiry(order);
+  return (
+    <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
+      <AlertDialog.Portal>
+        <AlertDialog.Overlay className="fixed inset-0 z-[60] bg-black/40" />
+        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-[60] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-5 shadow-xl">
+          <AlertDialog.Title className="text-sm font-semibold text-zinc-900">
+            Customer hasn&apos;t confirmed this order yet
+          </AlertDialog.Title>
+          <AlertDialog.Description className="mt-1.5 text-sm text-zinc-500">
+            This COD order is still awaiting the customer&apos;s WhatsApp confirmation
+            {msLeft > 0 ? ` (auto-expires in ${formatLeft(msLeft)})` : " (expired — pending auto-cancel)"}.
+            Proceeding will mark it <strong>confirmed</strong> on the customer&apos;s behalf and start fulfilment.
+          </AlertDialog.Description>
+          <div className="mt-4 flex justify-end gap-2">
+            <AlertDialog.Cancel asChild>
+              <button className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50">Go back</button>
+            </AlertDialog.Cancel>
+            <button
+              onClick={onProceed}
+              disabled={busy}
+              className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+            >
+              {busy ? "Confirming…" : "Confirm & proceed"}
+            </button>
+          </div>
+        </AlertDialog.Content>
+      </AlertDialog.Portal>
+    </AlertDialog.Root>
+  );
+}
+
 const COLUMNS = [
+  { key: "checkbox", label: "", width: "40px" },
   { key: "orderId", label: "Order", sortable: true, sortKey: "orderId" },
   { key: "customer", label: "Customer" },
   { key: "items", label: "Items", className: "hidden sm:table-cell" },
@@ -323,6 +457,23 @@ export default function OrdersPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
 
+  // Bulk multi-select. Selection is scoped to the current page; it resets
+  // whenever the visible list changes (page/filter/search) so every selected
+  // id always maps to an order object we hold (needed for status eligibility).
+  const [selected, setSelected] = useState(new Set());
+  const toggleSelect = (id) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  const clearSelection = () => setSelected(new Set());
+  const handleSelectAll = () =>
+    setSelected((prev) =>
+      prev.size === orders.length ? new Set() : new Set(orders.map((o) => o._id))
+    );
+  const selectedOrders = orders.filter((o) => selected.has(o._id));
+
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
@@ -344,6 +495,8 @@ export default function OrdersPage() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
   useEffect(() => { setPagination((prev) => ({ ...prev, page: 1 })); }, [debouncedSearch, statusFilter, paymentFilter]);
+  // Drop selection whenever the visible page of orders changes.
+  useEffect(() => { setSelected(new Set()); }, [debouncedSearch, statusFilter, paymentFilter, pagination.page]);
 
   const handleSort = (field) => setSort((prev) => (prev === field ? `-${field}` : prev === `-${field}` ? field : `-${field}`));
   const sortField = sort.startsWith("-") ? sort.slice(1) : sort;
@@ -400,8 +553,19 @@ export default function OrdersPage() {
             sortDir={sortDir}
             onSort={handleSort}
             isLoading={loading}
+            selectedIds={selected}
+            allSelected={orders.length > 0 && selected.size === orders.length}
+            onSelectAll={handleSelectAll}
             renderRow={(order) => (
               <tr key={order._id} className="border-b border-zinc-100 transition-colors hover:bg-zinc-50 cursor-pointer" onClick={() => openDetail(order)}>
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(order._id)}
+                    onChange={() => toggleSelect(order._id)}
+                    className="h-4 w-4 rounded border-zinc-300"
+                  />
+                </td>
                 <td className="px-4 py-3"><span className="font-medium text-zinc-900 text-xs tracking-wide">{order.orderId}</span></td>
                 <td className="px-4 py-3">
                   <p className="text-sm text-zinc-900 truncate max-w-[160px]">{order.user?.fullName || order.shippingAddress?.fullName || "—"}</p>
@@ -415,6 +579,7 @@ export default function OrdersPage() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1.5">
                     <StatusBadge status={order.status} />
+                    {isAwaitingCod(order) && <AwaitingPill />}
                     {order.giftWrap && (
                       <span title="Gift wrap requested" className="inline-flex items-center rounded-full bg-purple-50 p-1 text-purple-600">
                         <GiftIcon className="h-3.5 w-3.5" />
@@ -452,8 +617,249 @@ export default function OrdersPage() {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      {selected.size > 0 && (
+        <BulkActionBar
+          selectedOrders={selectedOrders}
+          onClear={clearSelection}
+          onRefetch={fetchOrders}
+        />
+      )}
     </div>
   );
+}
+
+/* ------------------------------------------------------------------ */
+/* Bulk action toolbar                                                */
+/* ------------------------------------------------------------------ */
+
+// A floating bar shown while orders are selected. Groups every bulk-able
+// action into three dropdowns. Each action fans out one request per order
+// via Promise.allSettled, then reports done / failed / skipped counts.
+function BulkActionBar({ selectedOrders, onClear, onRefetch }) {
+  const { showToast } = useToast();
+  const [busy, setBusy] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null); // "status" | "fulfill" | "refund"
+  const [confirm, setConfirm] = useState(null); // { title, description, confirmLabel, run }
+
+  const count = selectedOrders.length;
+
+  // targets = the subset actually acted on; skipped = count - targets.length.
+  async function runBulk(targets, fn, verb) {
+    setBusy(true);
+    const results = await Promise.allSettled(targets.map((o) => fn(o)));
+    const ok = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.length - ok;
+    const skipped = count - targets.length;
+    setBusy(false);
+    setOpenMenu(null);
+    setConfirm(null);
+    const parts = [`${ok} ${verb}`];
+    if (failed) parts.push(`${failed} failed`);
+    if (skipped) parts.push(`${skipped} skipped`);
+    showToast(parts.join(", "), failed ? "error" : "success");
+    onClear();
+    onRefetch();
+  }
+
+  // Run now, or stage a confirmation first for destructive actions.
+  function dispatch({ targets, fn, verb, confirm: needsConfirm, title, confirmLabel }) {
+    setOpenMenu(null);
+    const go = () => runBulk(targets, fn, verb);
+    if (needsConfirm) {
+      setConfirm({
+        title,
+        description: `${title} for ${targets.length} of ${count} selected order(s)? This can't be undone.`,
+        confirmLabel,
+        run: go,
+      });
+    } else {
+      go();
+    }
+  }
+
+  // Status targets reachable from at least one selected order.
+  const statusTargets = [
+    ...new Set(selectedOrders.flatMap((o) => VALID_TRANSITIONS[o.status] || [])),
+  ];
+  const eligibleFor = (target) =>
+    selectedOrders.filter((o) => (VALID_TRANSITIONS[o.status] || []).includes(target));
+  const returnable = selectedOrders.filter((o) => o.status === "return_requested");
+
+  const fulfillItems = [
+    { label: "Sync to Shiprocket", fn: (o) => adminShiprocketApi.sync(o._id), verb: "synced" },
+    { label: "Assign AWB (auto courier)", fn: (o) => adminShiprocketApi.assignAwb(o._id), verb: "assigned" },
+    { label: "Schedule pickup", fn: (o) => adminShiprocketApi.pickup(o._id), verb: "scheduled" },
+    { label: "Generate label", fn: (o) => adminShiprocketApi.label(o._id), verb: "labelled" },
+    { label: "Generate manifest", fn: (o) => adminShiprocketApi.manifest(o._id), verb: "manifested" },
+    { label: "Generate invoice", fn: (o) => adminShiprocketApi.invoice(o._id), verb: "invoiced" },
+    { label: "Cancel shipment", danger: true, confirm: true, fn: (o) => adminShiprocketApi.cancel(o._id), verb: "cancelled" },
+  ];
+
+  const refundItems = [
+    { label: "Process full refund", danger: true, confirm: true, fn: (o) => adminOrderApi.refund(o._id), verb: "refunded" },
+    { label: "Approve returns", targets: returnable, fn: (o) => adminOrderApi.approveReturn(o._id, "approve"), verb: "approved" },
+    { label: "Reject returns", targets: returnable, danger: true, fn: (o) => adminOrderApi.approveReturn(o._id, "reject"), verb: "rejected" },
+  ];
+
+  return (
+    <>
+      {openMenu && (
+        <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(null)} />
+      )}
+      <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-lg">
+        <span className="mr-1 text-sm font-medium text-zinc-700">{count} selected</span>
+
+        {/* Status */}
+        <BulkMenu
+          label="Status"
+          open={openMenu === "status"}
+          onToggle={() => setOpenMenu((m) => (m === "status" ? null : "status"))}
+          disabled={busy}
+        >
+          {statusTargets.length === 0 ? (
+            <MenuEmpty>No status change available</MenuEmpty>
+          ) : (
+            statusTargets.map((t) => (
+              <MenuItem
+                key={t}
+                danger={t === "cancelled"}
+                onClick={() =>
+                  dispatch({
+                    targets: eligibleFor(t),
+                    fn: (o) => adminOrderApi.updateStatus(o._id, t),
+                    verb: `→ ${PLAIN[t] || t}`,
+                    confirm: t === "cancelled",
+                    title: "Cancel orders",
+                    confirmLabel: "Cancel orders",
+                  })
+                }
+              >
+                {PLAIN[t] || t}
+                <span className="ml-auto text-xs text-zinc-400">{eligibleFor(t).length}</span>
+              </MenuItem>
+            ))
+          )}
+        </BulkMenu>
+
+        {/* Fulfillment */}
+        <BulkMenu
+          label="Fulfillment"
+          open={openMenu === "fulfill"}
+          onToggle={() => setOpenMenu((m) => (m === "fulfill" ? null : "fulfill"))}
+          disabled={busy}
+        >
+          {fulfillItems.map((it) => (
+            <MenuItem
+              key={it.label}
+              danger={it.danger}
+              onClick={() =>
+                dispatch({
+                  targets: selectedOrders,
+                  fn: it.fn,
+                  verb: it.verb,
+                  confirm: it.confirm,
+                  title: it.label,
+                  confirmLabel: it.label,
+                })
+              }
+            >
+              {it.label}
+            </MenuItem>
+          ))}
+        </BulkMenu>
+
+        {/* Refunds & returns */}
+        <BulkMenu
+          label="Refund / Return"
+          open={openMenu === "refund"}
+          onToggle={() => setOpenMenu((m) => (m === "refund" ? null : "refund"))}
+          disabled={busy}
+        >
+          {refundItems.map((it) => {
+            const targets = it.targets || selectedOrders;
+            return (
+              <MenuItem
+                key={it.label}
+                danger={it.danger}
+                onClick={() =>
+                  dispatch({
+                    targets,
+                    fn: it.fn,
+                    verb: it.verb,
+                    confirm: it.confirm,
+                    title: it.label,
+                    confirmLabel: it.label,
+                  })
+                }
+              >
+                {it.label}
+                {it.targets && (
+                  <span className="ml-auto text-xs text-zinc-400">{targets.length}</span>
+                )}
+              </MenuItem>
+            );
+          })}
+        </BulkMenu>
+
+        <button
+          onClick={onClear}
+          disabled={busy}
+          className="ml-1 rounded p-1 text-zinc-400 transition-colors hover:text-zinc-600 disabled:opacity-50"
+          title="Clear selection"
+        >
+          <CrossCircledIcon className="h-5 w-5" />
+        </button>
+      </div>
+
+      <ConfirmDialog
+        open={!!confirm}
+        onOpenChange={(o) => !o && setConfirm(null)}
+        title={confirm?.title || ""}
+        description={confirm?.description || ""}
+        confirmLabel={confirm?.confirmLabel || "Confirm"}
+        loading={busy}
+        onConfirm={() => confirm?.run()}
+      />
+    </>
+  );
+}
+
+function BulkMenu({ label, open, onToggle, disabled, children }) {
+  return (
+    <div className="relative">
+      <button
+        onClick={onToggle}
+        disabled={disabled}
+        className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50"
+      >
+        {label}
+        <ChevronDownIcon className="h-3.5 w-3.5 text-zinc-400" />
+      </button>
+      {open && (
+        <div className="absolute bottom-full left-0 z-50 mb-2 min-w-[200px] overflow-hidden rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MenuItem({ children, onClick, danger }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-zinc-50 ${
+        danger ? "text-red-600" : "text-zinc-700"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function MenuEmpty({ children }) {
+  return <div className="px-3 py-2 text-sm text-zinc-400">{children}</div>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -505,6 +911,7 @@ function OrderDetail({ order, onUpdated }) {
 function FulfillmentBlock({ order, onUpdated }) {
   const { showToast } = useToast();
   const [busy, setBusy] = useState("");
+  const gate = useCodGate(order, onUpdated, showToast);
   const s = order.shipping || {};
   const status = order.status;
   const cta = ADMIN_CTA[status];
@@ -543,6 +950,27 @@ function FulfillmentBlock({ order, onUpdated }) {
 
   return (
     <div className="space-y-4">
+      {/* COD awaiting-confirmation banner */}
+      {gate.awaiting && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-800">
+            <ChatBubbleIcon className="h-4 w-4" /> Awaiting customer confirmation
+          </p>
+          <p className="mt-0.5 text-xs text-amber-700">
+            This COD order is on hold until the customer confirms on WhatsApp. Auto-cancels in{" "}
+            <Countdown order={order} className="font-medium" />.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button onClick={gate.confirmNow} className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800">
+              Mark confirmed
+            </button>
+            <button onClick={gate.cancelNow} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50">
+              Cancel order
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Hero: current stage + the one next action */}
       <div className="overflow-hidden rounded-xl border border-zinc-200">
         <div className="flex">
@@ -584,7 +1012,7 @@ function FulfillmentBlock({ order, onUpdated }) {
                       }
                     />
                   ) : (
-                    <button onClick={() => setStatus(cta.to)} disabled={!!busy} className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50">
+                    <button onClick={() => (gate.awaiting ? gate.gatedRun(null) : setStatus(cta.to))} disabled={!!busy} className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50">
                       {busy === cta.to ? <ReloadIcon className="h-3.5 w-3.5 animate-spin" /> : <CheckCircledIcon className="h-3.5 w-3.5" />} {cta.label}
                     </button>
                   )
@@ -620,6 +1048,8 @@ function FulfillmentBlock({ order, onUpdated }) {
 
       {/* Shipment facts */}
       {(s.shiprocketOrderId || s.awbNumber) && <ShipmentFacts s={s} />}
+
+      <CodGateModal open={gate.open} onOpenChange={gate.setOpen} order={order} onProceed={gate.proceed} busy={gate.busy} />
     </div>
   );
 }
@@ -793,9 +1223,15 @@ function AdvancedOps({ order, onUpdated }) {
   const [couriers, setCouriers] = useState(null);
   const [courierId, setCourierId] = useState("");
   const [ndrComment, setNdrComment] = useState("");
+  const gate = useCodGate(order, onUpdated, showToast);
   const s = order.shipping || {};
 
-  const run = async (key, fn, msg) => {
+  // While the COD order is awaiting confirmation, route any override through the
+  // confirm-first gate.
+  const run = (key, fn, msg) =>
+    gate.awaiting ? gate.gatedRun(() => realRun(key, fn, msg)) : realRun(key, fn, msg);
+
+  const realRun = async (key, fn, msg) => {
     setBusy(key);
     try {
       const data = await fn();
@@ -876,6 +1312,7 @@ function AdvancedOps({ order, onUpdated }) {
           )}
         </div>
       )}
+      <CodGateModal open={gate.open} onOpenChange={gate.setOpen} order={order} onProceed={gate.proceed} busy={gate.busy} />
     </div>
   );
 }

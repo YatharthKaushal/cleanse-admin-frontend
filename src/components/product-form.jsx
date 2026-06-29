@@ -98,6 +98,7 @@ function initSizes(d) {
   return d.sizes.map((s) => ({
     label: s.label || "",
     price: s.price ?? "",
+    compareAtPrice: s.compareAtPrice ?? "",
     sku: s.sku || "",
     stock: s.stock ?? "",
   }));
@@ -231,12 +232,24 @@ export default function ProductForm({ initialData, onSubmit, isSubmitting }) {
     if (sizes.length > 0) {
       const cleaned = sizes
         .filter((s) => s.label.trim())
-        .map((s) => ({
-          label: s.label.trim(),
-          price: Number(s.price) || 0,
-          sku: s.sku.trim(),
-          stock: Number(s.stock) || 0,
-        }));
+        .map((s) => {
+          const out = {
+            label: s.label.trim(),
+            price: Number(s.price) || 0,
+            sku: s.sku.trim(),
+            stock: Number(s.stock) || 0,
+          };
+          // Only store compare-at when filled, so a blank input doesn't create
+          // a fake strike-through (compareAtPrice === 0).
+          if (
+            s.compareAtPrice !== "" &&
+            s.compareAtPrice !== null &&
+            s.compareAtPrice !== undefined
+          ) {
+            out.compareAtPrice = Number(s.compareAtPrice) || 0;
+          }
+          return out;
+        });
       if (cleaned.length > 0) {
         fd.append("sizes", JSON.stringify(cleaned));
       }

@@ -161,6 +161,22 @@ export default function CmsMarqueeEditor({ data, onChange }) {
                   </select>
                 </div>
               </div>
+              <div className="mt-3">
+                <label className="block text-xs font-medium text-zinc-500 mb-1">
+                  Reel URL
+                </label>
+                <input
+                  type="url"
+                  value={reel.reelUrl || ""}
+                  onChange={(e) => updateReel(i, "reelUrl", e.target.value)}
+                  placeholder="https://www.instagram.com/reel/..."
+                  className={inputClass}
+                />
+                <p className="text-xs text-zinc-400 mt-1">
+                  Clicking the reel card on the storefront opens this link in a
+                  new tab.
+                </p>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                 <CmsImageUpload
                   label="Poster Image"

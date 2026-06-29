@@ -2,7 +2,7 @@
 
 import { PlusIcon, TrashIcon } from "@radix-ui/react-icons";
 
-const EMPTY_SIZE = { label: "", price: "", sku: "", stock: "" };
+const EMPTY_SIZE = { label: "", price: "", compareAtPrice: "", sku: "", stock: "" };
 
 export default function SizeVariants({ sizes = [], onChange }) {
   function addSize() {
@@ -34,6 +34,9 @@ export default function SizeVariants({ sizes = [], onChange }) {
                   Price (Rs.)
                 </th>
                 <th className="px-3 py-2 text-left font-medium text-zinc-600">
+                  Compare at (Rs.)
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-zinc-600">
                   SKU
                 </th>
                 <th className="px-3 py-2 text-left font-medium text-zinc-600">
@@ -63,6 +66,18 @@ export default function SizeVariants({ sizes = [], onChange }) {
                       value={size.price}
                       onChange={(e) =>
                         updateSize(index, "price", e.target.value)
+                      }
+                      placeholder="0"
+                      className="w-full rounded border border-zinc-200 px-2 py-1.5 text-sm outline-none focus:border-zinc-400"
+                    />
+                  </td>
+                  <td className="px-3 py-2">
+                    <input
+                      type="number"
+                      min="0"
+                      value={size.compareAtPrice}
+                      onChange={(e) =>
+                        updateSize(index, "compareAtPrice", e.target.value)
                       }
                       placeholder="0"
                       className="w-full rounded border border-zinc-200 px-2 py-1.5 text-sm outline-none focus:border-zinc-400"

@@ -1,6 +1,11 @@
 "use client";
 
-import { PlusIcon, TrashIcon } from "@radix-ui/react-icons";
+import {
+  PlusIcon,
+  TrashIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+} from "@radix-ui/react-icons";
 import CmsImageUpload from "./cms-image-upload";
 
 const inputClass =
@@ -27,6 +32,14 @@ export default function CmsHeaderEditor({ data, onChange }) {
       "navLinks",
       navLinks.filter((_, i) => i !== index)
     );
+  };
+
+  const moveNavLink = (from, to) => {
+    if (to < 0 || to >= navLinks.length) return;
+    const links = [...navLinks];
+    const [moved] = links.splice(from, 1);
+    links.splice(to, 0, moved);
+    update("navLinks", links);
   };
 
   const updateSocialLink = (key, value) => {
@@ -59,6 +72,26 @@ export default function CmsHeaderEditor({ data, onChange }) {
         <div className="space-y-2">
           {navLinks.map((link, i) => (
             <div key={i} className="flex items-center gap-2">
+              <div className="flex flex-col">
+                <button
+                  type="button"
+                  onClick={() => moveNavLink(i, i - 1)}
+                  disabled={i === 0}
+                  className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                  aria-label="Move up"
+                >
+                  <ChevronUpIcon className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveNavLink(i, i + 1)}
+                  disabled={i === navLinks.length - 1}
+                  className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                  aria-label="Move down"
+                >
+                  <ChevronDownIcon className="h-4 w-4" />
+                </button>
+              </div>
               <input
                 type="text"
                 value={link.label || ""}

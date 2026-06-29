@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Cross1Icon, UploadIcon } from "@radix-ui/react-icons";
 import { adminCmsApi } from "@/lib/endpoints";
 import { useToast } from "@/context/toast-context";
+import ImageCropper from "@/components/image-cropper";
 import {
   BREAKPOINTS,
   DEVICE_META,
@@ -20,6 +21,7 @@ const MAX_SIZE = 100 * 1024 * 1024; // 100MB
 export default function CmsVariantSlots({ sources = {}, onChange }) {
   const { showToast } = useToast();
   const [uploadingKey, setUploadingKey] = useState(null);
+  const [cropTarget, setCropTarget] = useState(null); // { key, file }
   const inputRefs = useRef({});
 
   function validate(file) {
@@ -34,9 +36,13 @@ export default function CmsVariantSlots({ sources = {}, onChange }) {
     return true;
   }
 
-  async function handlePick(key, fileList) {
+  function handlePick(key, fileList) {
     const file = fileList?.[0];
     if (!file || !validate(file)) return;
+    setCropTarget({ key, file });
+  }
+
+  async function uploadVariant(key, file) {
     setUploadingKey(key);
     try {
       const formData = new FormData();
@@ -50,6 +56,22 @@ export default function CmsVariantSlots({ sources = {}, onChange }) {
     }
   }
 
+  // Capture the whole `cropTarget` (not `.key`) so the React Compiler's memo dep
+  // is the object itself — reading `.key` at render throws when it's null.
+  function handleCropped(croppedFile) {
+    const target = cropTarget;
+    if (!target) return;
+    setCropTarget(null);
+    uploadVariant(target.key, croppedFile);
+  }
+
+  function handleSkip() {
+    const target = cropTarget;
+    if (!target) return;
+    setCropTarget(null);
+    uploadVariant(target.key, target.file);
+  }
+
   function clearVariant(key) {
     const next = { ...sources };
     delete next[key];
@@ -60,7 +82,7 @@ export default function CmsVariantSlots({ sources = {}, onChange }) {
     <div className="flex flex-col gap-2">
       <p className="text-xs text-zinc-500">
         Optional. Each screen size falls back to the main image when empty.
-        Uploaded as-is (no crop).
+        Crop &amp; rotate before upload, or skip to use as-is.
       </p>
       <div className="grid grid-cols-3 gap-3">
         {BREAKPOINTS.map(({ key, label }) => {
@@ -134,6 +156,16 @@ export default function CmsVariantSlots({ sources = {}, onChange }) {
           );
         })}
       </div>
+
+      {cropTarget && (
+        <ImageCropper
+          file={cropTarget.file}
+          aspect={null}
+          title={`Crop ${cropTarget.key} variant (free)`}
+          onCropped={handleCropped}
+          onCancel={handleSkip}
+        />
+      )}
     </div>
   );
 }
