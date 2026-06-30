@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { PlusIcon, TrashIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { adminSettingsApi, adminShiprocketApi } from "@/lib/endpoints";
 import { useToast } from "@/context/toast-context";
+import Toggle from "@/components/toggle";
 
 const DEFAULTS = {
   discount_tier_config: {
@@ -232,14 +233,12 @@ export default function SettingsPage() {
               Cart Tier Discounts
             </h2>
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-sm text-zinc-700">
-                <input
-                  type="checkbox"
-                  checked={discountTiersEnabled}
-                  onChange={(e) => setDiscountTiersEnabled(e.target.checked)}
-                />
-                Enabled
-              </label>
+              <Toggle
+                checked={discountTiersEnabled}
+                onCheckedChange={setDiscountTiersEnabled}
+                label="Enabled"
+                size="sm"
+              />
               <button
                 type="button"
                 onClick={addTier}
@@ -261,8 +260,9 @@ export default function SettingsPage() {
               No discount tiers configured. Click "Add Tier" to create one.
             </p>
           ) : (
+            <div className="overflow-x-auto">
             <div
-              className={`space-y-3 ${
+              className={`space-y-3 min-w-[560px] ${
                 discountTiersEnabled ? "" : "opacity-60"
               }`}
             >
@@ -334,6 +334,7 @@ export default function SettingsPage() {
                   </div>
                 );
               })}
+            </div>
             </div>
           )}
         </div>
@@ -426,16 +427,14 @@ export default function SettingsPage() {
             <h2 className="text-base font-semibold text-zinc-900">
               Loyalty Program
             </h2>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={!!loyaltyConfig.enabled}
-                onChange={(e) =>
-                  setLoyaltyConfig({ ...loyaltyConfig, enabled: e.target.checked })
-                }
-              />
-              Enabled
-            </label>
+            <Toggle
+              checked={!!loyaltyConfig.enabled}
+              onCheckedChange={(val) =>
+                setLoyaltyConfig({ ...loyaltyConfig, enabled: val })
+              }
+              label="Enabled"
+              size="sm"
+            />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -520,16 +519,14 @@ export default function SettingsPage() {
             <h2 className="text-base font-semibold text-zinc-900">
               Referral Program
             </h2>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={!!referralConfig.enabled}
-                onChange={(e) =>
-                  setReferralConfig({ ...referralConfig, enabled: e.target.checked })
-                }
-              />
-              Enabled
-            </label>
+            <Toggle
+              checked={!!referralConfig.enabled}
+              onCheckedChange={(val) =>
+                setReferralConfig({ ...referralConfig, enabled: val })
+              }
+              label="Enabled"
+              size="sm"
+            />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -826,7 +823,7 @@ function ShiprocketSettings({ inputClass }) {
           <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Configuration</h3>
           <div className="rounded-lg border border-zinc-200 p-4 space-y-4">
             {/* Pickup */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-zinc-500 mb-1">Default pickup location</label>
                 <select
@@ -857,7 +854,7 @@ function ShiprocketSettings({ inputClass }) {
             {/* Warehouse (return destination) */}
             <div>
               <p className="text-xs font-medium text-zinc-500 mb-2">Warehouse address (where customer returns are sent back)</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   ["name", "Name"],
                   ["phone", "Phone"],
@@ -880,7 +877,7 @@ function ShiprocketSettings({ inputClass }) {
             </div>
 
             {/* Courier + NDR + alert email */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-zinc-500 mb-1">Default courier ID (blank = auto)</label>
                 <input
@@ -912,7 +909,7 @@ function ShiprocketSettings({ inputClass }) {
             {/* Package defaults */}
             <div>
               <p className="text-xs font-medium text-zinc-500 mb-2">Default package size (cm) / weight (kg)</p>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
                   ["length", "Length"],
                   ["breadth", "Breadth"],
@@ -984,7 +981,7 @@ function ShiprocketSettings({ inputClass }) {
 
         {showForm && (
           <div className="rounded-lg border border-zinc-200 p-4 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
                 ["pickup_location", "Nickname *"],
                 ["name", "Contact name"],
@@ -1031,10 +1028,12 @@ function ShiprocketSettings({ inputClass }) {
             placeholder="Delivery pincode"
             className="w-40 rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-400"
           />
-          <label className="flex items-center gap-1.5 text-sm text-zinc-600">
-            <input type="checkbox" checked={svcCod} onChange={(e) => setSvcCod(e.target.checked)} />
-            COD
-          </label>
+          <Toggle
+            checked={svcCod}
+            onCheckedChange={setSvcCod}
+            label="COD"
+            size="sm"
+          />
           <button
             onClick={checkSvc}
             disabled={svcLoading}

@@ -16,6 +16,7 @@ import { useToast } from "@/context/toast-context";
 import { adminBlogApi } from "@/lib/endpoints";
 import ResponsiveVariants, { BREAKPOINTS } from "@/components/responsive-variants";
 import MediaPicker from "@/components/media/media-picker";
+import Toggle from "@/components/toggle";
 
 const capBp = (bp) => bp.charAt(0).toUpperCase() + bp.slice(1);
 
@@ -330,12 +331,12 @@ export default function BlogForm({ initialData, onSubmit, isSubmitting }) {
 
       {/* Content */}
       <div className="rounded-lg border border-zinc-200 bg-white p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-base font-semibold text-zinc-900">Content</h2>
           <button
             type="button"
             onClick={addParagraph}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
+            className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
           >
             <PlusIcon className="h-3.5 w-3.5" />
             Add Paragraph
@@ -578,15 +579,13 @@ function SingleImageUpload({ image, onChange, optimize, onOptimizeChange }) {
           Choose from library
         </button>
         {onOptimizeChange && (
-          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-zinc-500">
-            <input
-              type="checkbox"
-              checked={!!optimize}
-              onChange={(e) => onOptimizeChange(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-zinc-300"
-            />
-            Optimize → WebP
-          </label>
+          <Toggle
+            checked={!!optimize}
+            onCheckedChange={onOptimizeChange}
+            label="Optimize → WebP"
+            labelClassName="text-xs text-zinc-500"
+            size="sm"
+          />
         )}
       </div>
 

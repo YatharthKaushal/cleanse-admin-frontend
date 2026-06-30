@@ -22,3 +22,23 @@ body {
 [data-radix-popper-content-wrapper] {
   z-index: 50 !important;
 }
+
+/* Native color input rendered as a proper, fully-filled clickable square */
+.color-swatch {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding: 0;
+  background: none;
+}
+.color-swatch::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.color-swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: 0.5rem;
+}
+.color-swatch::-moz-color-swatch {
+  border: none;
+  border-radius: 0.5rem;
+}

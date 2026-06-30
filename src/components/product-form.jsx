@@ -364,7 +364,7 @@ export default function ProductForm({ initialData, onSubmit, isSubmitting }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
-        <Tabs.List className="flex gap-1 border-b border-zinc-200">
+        <Tabs.List className="flex gap-1 overflow-x-auto border-b border-zinc-200">
           {[
             { value: "general", label: "General" },
             { value: "media", label: "Media & Variants" },
@@ -373,7 +373,7 @@ export default function ProductForm({ initialData, onSubmit, isSubmitting }) {
             <Tabs.Trigger
               key={tab.value}
               value={tab.value}
-              className="border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-700 data-[state=active]:border-zinc-900 data-[state=active]:text-zinc-900"
+              className="shrink-0 whitespace-nowrap border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-700 data-[state=active]:border-zinc-900 data-[state=active]:text-zinc-900"
             >
               {tab.label}
             </Tabs.Trigger>

@@ -283,7 +283,7 @@ export default function NewsletterPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-zinc-900">Newsletter</h1>
           <p className="text-sm text-zinc-500 mt-0.5">

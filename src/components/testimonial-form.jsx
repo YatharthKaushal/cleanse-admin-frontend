@@ -8,6 +8,7 @@ import { ChevronDownIcon, CheckIcon, UploadIcon, Cross2Icon } from "@radix-ui/re
 import { useToast } from "@/context/toast-context";
 import ResponsiveVariants, { BREAKPOINTS } from "@/components/responsive-variants";
 import MediaPicker from "@/components/media/media-picker";
+import Toggle from "@/components/toggle";
 
 const capBp = (bp) => bp.charAt(0).toUpperCase() + bp.slice(1);
 
@@ -342,15 +343,14 @@ export default function TestimonialForm({ initialData, onSubmit, isSubmitting })
         <p className="mt-1 text-sm text-zinc-500">
           Upload before and after photos. JPEG, PNG, or WebP, max 100MB each.
         </p>
-        <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-zinc-500">
-          <input
-            type="checkbox"
-            checked={optimize}
-            onChange={(e) => setOptimize(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-zinc-300"
-          />
-          Optimize uploads → WebP (visually lossless)
-        </label>
+        <Toggle
+          checked={optimize}
+          onCheckedChange={setOptimize}
+          label="Optimize uploads → WebP (visually lossless)"
+          labelClassName="text-xs text-zinc-500"
+          size="sm"
+          className="mt-2"
+        />
         <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div className="flex flex-col gap-3">
             <SingleImageUpload

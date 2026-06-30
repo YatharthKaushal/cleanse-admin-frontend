@@ -124,7 +124,7 @@ export default function CouponsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-zinc-900">Coupons</h1>
           <p className="text-sm text-zinc-500 mt-0.5">
@@ -150,13 +150,13 @@ export default function CouponsPage() {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex flex-wrap items-center gap-4 mb-4">
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by coupon code..."
-          className="w-full max-w-xs rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 outline-none transition-colors"
+          className="w-full sm:max-w-xs rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 outline-none transition-colors"
         />
         <div className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white p-0.5">
           {STATUS_TABS.map((tab) => (
@@ -212,7 +212,11 @@ export default function CouponsPage() {
               </thead>
               <tbody>
                 {sortedCoupons.map((coupon) => (
-                  <tr key={coupon._id} className="border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors">
+                  <tr
+                    key={coupon._id}
+                    className="cursor-pointer border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors"
+                    onClick={() => openEdit(coupon)}
+                  >
                     <td className="px-4 py-3 font-medium text-zinc-900 font-mono">{coupon.code}</td>
                     <td className="px-4 py-3 text-zinc-600 max-w-[200px] truncate">
                       {coupon.description || "—"}
@@ -242,7 +246,7 @@ export default function CouponsPage() {
                           })
                         : "—"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       {isExpired(coupon) ? (
                         <StatusBadge expired />
                       ) : (
@@ -251,7 +255,7 @@ export default function CouponsPage() {
                         </button>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => openEdit(coupon)}

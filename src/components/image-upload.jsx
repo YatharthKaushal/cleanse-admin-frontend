@@ -14,6 +14,7 @@ import { useToast } from "@/context/toast-context";
 import ImageCropper from "@/components/image-cropper";
 import ResponsiveVariants, { BREAKPOINTS } from "@/components/responsive-variants";
 import MediaPicker from "@/components/media/media-picker";
+import Toggle from "@/components/toggle";
 
 const countVariants = (sources) =>
   sources ? BREAKPOINTS.filter(({ key }) => sources[key]?.url).length : 0;
@@ -231,15 +232,13 @@ export default function ImageUpload({
           Choose from library
         </button>
         {onOptimizeChange && (
-          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-zinc-500">
-            <input
-              type="checkbox"
-              checked={!!optimize}
-              onChange={(e) => onOptimizeChange(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-zinc-300"
-            />
-            Optimize new uploads → WebP
-          </label>
+          <Toggle
+            checked={!!optimize}
+            onCheckedChange={onOptimizeChange}
+            label="Optimize new uploads → WebP"
+            labelClassName="text-xs text-zinc-500"
+            size="sm"
+          />
         )}
       </div>
 
@@ -332,7 +331,7 @@ export default function ImageUpload({
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(94vw,640px)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-xl">
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(94vw,640px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
             <div className="flex items-start gap-3">
               {variantsFor !== null && images[variantsFor]?.url && (
                 <img

@@ -1,5 +1,7 @@
 "use client";
 
+import Toggle from "@/components/toggle";
+
 const inputClass =
   "w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 outline-none transition-colors";
 
@@ -28,15 +30,11 @@ export default function CmsPromoBarEditor({ data, onChange }) {
 
   return (
     <div className="space-y-5">
-      <label className="flex items-center gap-2 text-sm text-zinc-700">
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={(e) => toggleEnabled(e.target.checked)}
-          className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400"
-        />
-        Show promo bar on storefront
-      </label>
+      <Toggle
+        checked={enabled}
+        onCheckedChange={toggleEnabled}
+        label="Show promo bar on storefront"
+      />
 
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-zinc-900">Bar Messages</h3>

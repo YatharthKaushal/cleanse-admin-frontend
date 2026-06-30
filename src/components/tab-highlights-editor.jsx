@@ -93,8 +93,8 @@ function IconPicker({ value, onChange }) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full z-50 mt-1 w-[320px] rounded-lg border border-zinc-200 bg-white p-2 shadow-lg">
-            <div className="grid grid-cols-6 gap-1">
+          <div className="absolute left-0 top-full z-50 mt-1 w-[min(320px,calc(100vw-2rem))] rounded-lg border border-zinc-200 bg-white p-2 shadow-lg">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
               {ICON_CATALOG.map((icon) => (
                 <button
                   key={icon.id}

@@ -112,7 +112,7 @@ export default function CmsPeelRevealEditor({ data, onChange }) {
         <label className="block text-xs font-medium text-zinc-500 mb-2">
           Intro Texts (slide apart on scroll)
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[0, 1].map((i) => (
             <input
               key={i}

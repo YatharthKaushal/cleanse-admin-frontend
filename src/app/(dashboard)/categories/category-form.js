@@ -6,6 +6,7 @@ import { adminCategoryApi } from "@/lib/endpoints";
 import { useToast } from "@/context/toast-context";
 import ImageCropper from "@/components/image-cropper";
 import MediaPicker from "@/components/media/media-picker";
+import Toggle from "@/components/toggle";
 
 function toImageState(url) {
   return url ? { url, isNew: false } : null;
@@ -153,15 +154,13 @@ export default function CategoryForm({ category, onClose, onSuccess }) {
             />
           </div>
 
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-500">
-            <input
-              type="checkbox"
-              checked={optimize}
-              onChange={(e) => setOptimize(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-zinc-300"
-            />
-            Optimize banner uploads → WebP (visually lossless)
-          </label>
+          <Toggle
+            checked={optimize}
+            onCheckedChange={setOptimize}
+            label="Optimize banner uploads → WebP (visually lossless)"
+            labelClassName="text-xs text-zinc-500"
+            size="sm"
+          />
 
           {/* Sort Order */}
           <div>

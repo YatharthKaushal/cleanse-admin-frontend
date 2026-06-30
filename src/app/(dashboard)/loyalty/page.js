@@ -317,13 +317,17 @@ export default function AdminLoyaltyPage() {
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {users.map((u) => (
-                  <tr key={u._id} className="hover:bg-zinc-50">
+                  <tr
+                    key={u._id}
+                    className="cursor-pointer hover:bg-zinc-50"
+                    onClick={() => setSelectedUserId(u._id)}
+                  >
                     <td className="px-4 py-3 font-medium text-zinc-900">{u.fullName}</td>
                     <td className="px-4 py-3 text-zinc-600">{u.email}</td>
                     <td className="px-4 py-3 text-right font-semibold text-zinc-900">
                       {u.loyaltyPoints}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
                         onClick={() => setSelectedUserId(u._id)}

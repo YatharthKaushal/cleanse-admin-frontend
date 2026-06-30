@@ -93,7 +93,7 @@ export default function ResponsiveVariants({ value = {}, onChange }) {
       <p className="text-xs text-zinc-500">
         Optional. Each screen size falls back to the main image when left empty.
       </p>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {BREAKPOINTS.map(({ key, label }) => {
           const v = sources[key];
           const hint = DEVICE_META[key].hint;

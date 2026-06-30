@@ -84,7 +84,7 @@ export default function CmsVariantSlots({ sources = {}, onChange }) {
         Optional. Each screen size falls back to the main image when empty.
         Crop &amp; rotate before upload, or skip to use as-is.
       </p>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {BREAKPOINTS.map(({ key, label }) => {
           const v = sources?.[key];
           const isUploading = uploadingKey === key;

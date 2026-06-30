@@ -108,7 +108,7 @@ export default function MediaPicker({ open, onOpenChange, onSelect, imageOnly = 
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-3 border-t border-zinc-200 px-5 py-3">
+          <div className="flex flex-col gap-3 border-t border-zinc-200 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
             <Pagination
               page={pagination.page}
               pages={pagination.pages}
@@ -116,7 +116,7 @@ export default function MediaPicker({ open, onOpenChange, onSelect, imageOnly = 
               limit={pagination.limit}
               onPageChange={(p) => fetchMedia(p)}
             />
-            <div className="flex gap-2">
+            <div className="flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}

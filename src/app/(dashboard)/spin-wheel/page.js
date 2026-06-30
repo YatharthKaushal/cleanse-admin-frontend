@@ -169,7 +169,7 @@ export default function SpinWheelPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-zinc-900">Spin Wheel</h1>
           <p className="text-sm text-zinc-500 mt-0.5">
@@ -268,7 +268,11 @@ export default function SpinWheelPage() {
                   </thead>
                   <tbody>
                     {prizes.map((prize) => (
-                      <tr key={prize._id} className="border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors">
+                      <tr
+                        key={prize._id}
+                        className="cursor-pointer border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors"
+                        onClick={() => openEdit(prize)}
+                      >
                         <td className="px-4 py-3 font-medium text-zinc-900">{prize.label}</td>
                         <td className="px-4 py-3 text-zinc-600 font-mono text-xs">{prize.value}</td>
                         <td className="px-4 py-3 text-zinc-600">{prize.weight}%</td>
@@ -287,12 +291,12 @@ export default function SpinWheelPage() {
                             />
                           </div>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           <button onClick={() => handleToggleActive(prize)}>
                             <StatusBadge active={prize.isActive} />
                           </button>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => openEdit(prize)}

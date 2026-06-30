@@ -707,7 +707,7 @@ function BulkActionBar({ selectedOrders, onClear, onRefetch }) {
       {openMenu && (
         <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(null)} />
       )}
-      <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-lg">
+      <div className="fixed bottom-6 left-1/2 z-40 flex w-[calc(100vw-2rem)] max-w-[640px] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-lg sm:w-auto sm:flex-nowrap sm:justify-start">
         <span className="mr-1 text-sm font-medium text-zinc-700">{count} selected</span>
 
         {/* Status */}
@@ -837,7 +837,7 @@ function BulkMenu({ label, open, onToggle, disabled, children }) {
         <ChevronDownIcon className="h-3.5 w-3.5 text-zinc-400" />
       </button>
       {open && (
-        <div className="absolute bottom-full left-0 z-50 mb-2 min-w-[200px] overflow-hidden rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
+        <div className="absolute bottom-full left-0 z-50 mb-2 w-max min-w-[200px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
           {children}
         </div>
       )}

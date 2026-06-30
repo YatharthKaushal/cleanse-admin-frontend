@@ -81,7 +81,7 @@ export default function ShippingZonesPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-zinc-900">Shipping Zones</h1>
           <p className="text-sm text-zinc-500 mt-0.5">
@@ -133,7 +133,11 @@ export default function ShippingZonesPage() {
               </thead>
               <tbody>
                 {zones.map((zone) => (
-                  <tr key={zone._id} className="border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors">
+                  <tr
+                    key={zone._id}
+                    className="cursor-pointer border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors"
+                    onClick={() => openEdit(zone)}
+                  >
                     <td className="px-4 py-3 font-medium text-zinc-900">{zone.name}</td>
                     <td className="px-4 py-3 text-zinc-600">
                       {zone.pincodes?.length || 0} pincode{(zone.pincodes?.length || 0) !== 1 ? "s" : ""}
@@ -152,12 +156,12 @@ export default function ShippingZonesPage() {
                     <td className="px-4 py-3 text-zinc-600">
                       {zone.estimatedDays?.standard || "3-5"} days
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => handleToggleActive(zone)}>
                         <StatusBadge active={zone.isActive} />
                       </button>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => openEdit(zone)}

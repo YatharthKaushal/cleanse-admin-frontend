@@ -168,7 +168,7 @@ export default function CouponForm({ coupon, onClose, onSuccess }) {
           )}
 
           {/* Min Order Value & Max Discount Amount */}
-          <div className={`grid gap-3 ${form.discountType === "percentage" ? "grid-cols-2" : "grid-cols-1"}`}>
+          <div className={`grid gap-3 ${form.discountType === "percentage" ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">
                 Min Order Value <span className="font-normal text-zinc-400">(optional)</span>
@@ -206,7 +206,7 @@ export default function CouponForm({ coupon, onClose, onSuccess }) {
           </div>
 
           {/* Valid From & Valid Till */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Valid From</label>
               <input
@@ -230,7 +230,7 @@ export default function CouponForm({ coupon, onClose, onSuccess }) {
           </div>
 
           {/* Usage Limit & Per User Limit */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">
                 Usage Limit <span className="font-normal text-zinc-400">(0 = unlimited)</span>

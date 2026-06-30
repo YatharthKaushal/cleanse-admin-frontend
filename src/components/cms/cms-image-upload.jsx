@@ -7,6 +7,7 @@ import { adminCmsApi } from "@/lib/endpoints";
 import { useToast } from "@/context/toast-context";
 import CmsVariantSlots from "./cms-variant-slots";
 import MediaPicker from "@/components/media/media-picker";
+import Toggle from "@/components/toggle";
 import { getCroppedBlob } from "@/lib/crop-image";
 
 function RotateLeftIcon({ className }) {
@@ -288,15 +289,13 @@ export default function CmsImageUpload({
             Choose from library
           </button>
           {!isVideo && (
-            <label className="flex cursor-pointer items-center gap-1.5 text-xs text-zinc-500">
-              <input
-                type="checkbox"
-                checked={optimize}
-                onChange={(e) => setOptimize(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-zinc-300"
-              />
-              Optimize → WebP
-            </label>
+            <Toggle
+              checked={optimize}
+              onCheckedChange={setOptimize}
+              label="Optimize → WebP"
+              labelClassName="text-xs text-zinc-500"
+              size="sm"
+            />
           )}
         </div>
 

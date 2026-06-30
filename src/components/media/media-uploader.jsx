@@ -5,6 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Cross1Icon, UploadIcon } from "@radix-ui/react-icons";
 import { adminMediaApi } from "@/lib/endpoints";
 import { useToast } from "@/context/toast-context";
+import Toggle from "@/components/toggle";
 
 const ALLOWED = [
   "image/jpeg",
@@ -119,21 +120,20 @@ export default function MediaUploader({ open, onOpenChange, onUploaded }) {
             />
           </div>
 
-          <label
-            className={`mt-4 flex items-center gap-2 text-sm ${
-              isVideo ? "cursor-not-allowed text-zinc-400" : "cursor-pointer text-zinc-700"
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={!isVideo && optimize}
-              disabled={isVideo}
-              onChange={(e) => setOptimize(e.target.checked)}
-              className="h-4 w-4 rounded border-zinc-300"
-            />
-            Optimize — convert to WebP (visually lossless)
-            {isVideo && <span className="text-xs">(images only)</span>}
-          </label>
+          <Toggle
+            checked={!isVideo && optimize}
+            disabled={isVideo}
+            onCheckedChange={setOptimize}
+            size="sm"
+            className="mt-4"
+            labelClassName={`text-sm ${isVideo ? "text-zinc-400" : "text-zinc-700"}`}
+            label={
+              <>
+                Optimize — convert to WebP (visually lossless)
+                {isVideo && <span className="ml-1 text-xs">(images only)</span>}
+              </>
+            }
+          />
 
           <div className="mt-5 flex justify-end gap-2">
             <button

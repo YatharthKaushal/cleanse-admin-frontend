@@ -141,8 +141,8 @@ export default function ImageCropper({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between bg-zinc-900 px-4 py-3">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-3 bg-zinc-900 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-3">
                 <label className="text-xs text-zinc-400">Zoom</label>
                 <input
@@ -152,7 +152,7 @@ export default function ImageCropper({
                   step={0.05}
                   value={zoom}
                   onChange={(e) => setZoom(Number(e.target.value))}
-                  className="h-1 w-32 cursor-pointer accent-white"
+                  className="h-1 w-32 max-w-[40vw] cursor-pointer accent-white"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -180,11 +180,11 @@ export default function ImageCropper({
                   step={1}
                   value={rotation}
                   onChange={(e) => setRotation(Number(e.target.value))}
-                  className="h-1 w-32 cursor-pointer accent-white"
+                  className="h-1 w-32 max-w-[40vw] cursor-pointer accent-white"
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={handleCancel}

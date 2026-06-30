@@ -59,7 +59,7 @@ function CustomerDetailModal({ customerId, onClose }) {
             {/* Customer Info Header */}
             <div className="rounded-lg border border-zinc-100 bg-zinc-50/50 p-4">
               <h3 className="text-lg font-semibold text-zinc-900">{customer.fullName}</h3>
-              <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
                 <div>
                   <span className="text-zinc-500">Email:</span>{" "}
                   <span className="text-zinc-700">{customer.email}</span>
@@ -260,7 +260,7 @@ export default function CustomersPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-zinc-900">Customers</h1>
           <p className="text-sm text-zinc-500 mt-0.5">Manage your customer base</p>
@@ -319,7 +319,8 @@ export default function CustomersPage() {
                 {customers.map((customer) => (
                   <tr
                     key={customer._id}
-                    className="border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors"
+                    className="cursor-pointer border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors"
+                    onClick={() => setDetailId(customer._id)}
                   >
                     <td className="px-4 py-3 font-medium text-zinc-900">{customer.fullName}</td>
                     <td className="px-4 py-3 text-zinc-600">{customer.email}</td>
@@ -332,7 +333,7 @@ export default function CustomersPage() {
                         ? new Date(customer.createdAt).toLocaleDateString()
                         : "—"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => setDetailId(customer._id)}

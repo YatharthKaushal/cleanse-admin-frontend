@@ -373,7 +373,7 @@ export default function SpecialCouponFormPage({ promotion }) {
             />
           </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Application Method" required>
               <SelectInput
                 value={form.applicationMethod}
@@ -402,7 +402,7 @@ export default function SpecialCouponFormPage({ promotion }) {
           <SectionCard title="Buy X Get Y" description="Define what customers buy and what they get">
             {/* Buy condition */}
             <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Customer Must Buy</h4>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label="Condition Type">
                 <SelectInput
                   value={form.buyConditionType}
@@ -438,7 +438,7 @@ export default function SpecialCouponFormPage({ promotion }) {
 
             {/* Get reward */}
             <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Customer Gets</h4>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label="Reward Type">
                 <SelectInput
                   value={form.getRewardType}
@@ -470,7 +470,7 @@ export default function SpecialCouponFormPage({ promotion }) {
               />
             )}
             {form.getRewardType !== "free" && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField label="Discount Value" required>
                   <NumberInput
                     value={form.getRewardDiscountValue}
@@ -545,7 +545,7 @@ export default function SpecialCouponFormPage({ promotion }) {
               />
             </FormField>
             {(form.getRewardType === "percentage_off" || form.getRewardType === "fixed_off") && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField label="Discount Value" required>
                   <NumberInput
                     value={form.getRewardDiscountValue}
@@ -636,7 +636,7 @@ export default function SpecialCouponFormPage({ promotion }) {
               onChange={(ids) => set("freeGiftProductId", ids[0] || "")}
               label="Gift Product"
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label="Variant/Size" hint="optional">
                 <TextInput
                   value={form.freeGiftVariantSize}
@@ -666,7 +666,7 @@ export default function SpecialCouponFormPage({ promotion }) {
                 placeholder="e.g. 800"
               />
             </FormField>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label="Shipping Discount Type">
                 <SelectInput
                   value={form.shippingTierDiscountType}
@@ -691,7 +691,7 @@ export default function SpecialCouponFormPage({ promotion }) {
 
         {/* Section 3: Scheduling */}
         <SectionCard title="Scheduling" description="When this promotion is valid">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Valid From">
               <input
                 type="date"
@@ -713,7 +713,7 @@ export default function SpecialCouponFormPage({ promotion }) {
 
         {/* Section 4: Usage Limits */}
         <SectionCard title="Usage Limits">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Total Usage Limit" hint="0 = unlimited">
               <NumberInput
                 value={form.usageLimit}
@@ -740,7 +740,7 @@ export default function SpecialCouponFormPage({ promotion }) {
             onChange={(v) => set("isFirstOrderOnly", v)}
             label="First order only"
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Min Order Value" hint="optional">
               <NumberInput
                 value={form.minOrderValue}
@@ -774,7 +774,7 @@ export default function SpecialCouponFormPage({ promotion }) {
             onChange={(v) => set("excludeWithCoupons", v)}
             label="Block regular coupon codes when this is active"
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Stack Group" hint="promotions in same group conflict">
               <TextInput
                 value={form.stackGroup}

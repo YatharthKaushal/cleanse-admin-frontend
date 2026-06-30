@@ -175,7 +175,7 @@ export default function PrizeForm({ prize, onClose, onSuccess }) {
           )}
 
           {/* Colors */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Segment Color</label>
               <div className="flex items-center gap-2">
@@ -183,7 +183,8 @@ export default function PrizeForm({ prize, onClose, onSuccess }) {
                   type="color"
                   value={form.color}
                   onChange={(e) => handleChange("color", e.target.value)}
-                  className="h-9 w-9 rounded border border-zinc-200 cursor-pointer"
+                  title="Click to choose a color"
+                  className="color-swatch h-10 w-10 shrink-0 rounded-lg border border-zinc-300 shadow-sm cursor-pointer hover:border-zinc-400 transition-colors"
                 />
                 <input
                   type="text"
@@ -200,7 +201,8 @@ export default function PrizeForm({ prize, onClose, onSuccess }) {
                   type="color"
                   value={form.textColor}
                   onChange={(e) => handleChange("textColor", e.target.value)}
-                  className="h-9 w-9 rounded border border-zinc-200 cursor-pointer"
+                  title="Click to choose a color"
+                  className="color-swatch h-10 w-10 shrink-0 rounded-lg border border-zinc-300 shadow-sm cursor-pointer hover:border-zinc-400 transition-colors"
                 />
                 <input
                   type="text"
